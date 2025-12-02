@@ -1,0 +1,5 @@
+"0","sampling_df <- raw %>%"
+"0","  filter(is.na(taxonomic_publication)) %>% # remove purely taxonomic studies"
+"0","  select(File,recordTitle,DOI,publicationYear,mininumSurveyedDepthInMeters,maximumSurveyedDepthInMeters,samplingUnit)  "
+"0",""
+"0","sampling_df %>% tidyr::drop_na(samplingUnit)"

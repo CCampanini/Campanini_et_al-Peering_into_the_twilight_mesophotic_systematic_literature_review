@@ -1,0 +1,8 @@
+"0","sampling_df$type_per_record <- as.factor(sampling_df$type_per_record)"
+"0",""
+"0","sampling_unit_per_record <- sampling_df %>% "
+"0","  group_by(type_per_record) %>%"
+"0","  summarise(n_records = length(type_per_record)) %>%"
+"0","  mutate(percentage= round(n_records / sum(n_records) * 100,0))"
+"0",""
+"0","sampling_unit_per_record"

@@ -1,0 +1,3 @@
+"0","nrow(subset(platform_depth_env,platform_depth_env$ccr_direct == 1 & grepl(""tropical"",platform_depth_env$latitudinalRegion)))"
+"2","Errore: oggetto 'platform_depth_env' non trovato
+"

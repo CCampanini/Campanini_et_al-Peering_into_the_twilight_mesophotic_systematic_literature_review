@@ -1,0 +1,3 @@
+"0","#keep the year only in the year column (in some rows exact time is specified)"
+"0","raw$publicationYear <-  stringr::str_remove(raw$publicationYear, "
+"0","                                 pattern = ""\\-.*"") "
