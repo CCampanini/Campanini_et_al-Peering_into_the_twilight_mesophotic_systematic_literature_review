@@ -12,7 +12,9 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE, tidy = "styler"
+)
 ```
 
 # SYSTEMATIC REVIEW ON INVESTIGATION METHODS OF MESOPHOTIC latitudinalRegionS WITH A FOCUS ON BENTHIC COMMUNITIES
@@ -79,6 +81,8 @@ summary_list <- map(cols, function(col) {
 summary_df <- bind_rows(summary_list)
 
 summary_df
+
+rm(summary_list, cols)
 ```
 
 
@@ -359,6 +363,8 @@ for (col_name in colnames(count_columns)) {
 }
 
 rm(col_name, counts)
+
+count_results <- count_results[names(count_results) != "File"]
 ```
 
 ### Export summary tables
@@ -375,7 +381,7 @@ write.xlsx(count_results,
 
 Create treemaps charts 
 
-```{r}
+```{r treemap_counts}
 treemap_func = function(dat,var) {
   ggplot(dat,
        aes(area=Count,
@@ -395,11 +401,13 @@ treemap_func = function(dat,var) {
 
 treemap_counts <- list()
 
-for (col_name in colnames(count_columns)) {
+for (col_name in colnames(count_columns[,-1])) {
   
   treemap_counts[[col_name]] <- treemap_func(dat= count_results[[col_name]], var = col_name)
 
 }
+
+treemap_counts[[1]]
 ```
 
 Save all tree maps plots
@@ -474,6 +482,8 @@ for (col_name in colnames(count_columns_method)) {
 }
 
 rm(col_name, counts)
+
+count_results_method <- count_results_method[names(count_results_method) != "File"]
 ```
 
 Export summary tables
@@ -488,7 +498,7 @@ write.xlsx(count_results_method,
 
 Create treemaps charts 
 
-```{r}
+```{r treemap_counts_methods}
 treemap_func = function(dat,var) {
   ggplot(dat,
        aes(area=Count,
@@ -508,13 +518,13 @@ treemap_func = function(dat,var) {
 
 treemap_counts <- list()
 
-for (col_name in colnames(count_columns_method)) {
+for (col_name in colnames(count_columns_method[,-1])) {
   
   treemap_counts[[col_name]] <- treemap_func(dat= count_results_method[[col_name]], var = col_name)
 
 }
 
-treemap_counts[[4]]
+treemap_counts[[1]]
 ```
 
 Save all tree maps plots
@@ -547,7 +557,7 @@ Create a list of data frame splitting values
 split_columns <- raw %>% 
   select(meso_substrate,
          habit,
-         meso_spatial,
+         environmentalPosition,
          observationalORexperimental,
          taxonomicTargetLevel, 
          indicators,
@@ -625,7 +635,7 @@ write.xlsx(split_tot,
 
 Create bar charts for each collected parameter
 
-```{r Create bar charts for each collected parameter}
+```{r barchart_counts}
 barchart_func = function(dat,var) {
   
  ggplot(dat, 
@@ -675,9 +685,10 @@ lapply(names(barchart_counts), function(x){
          )
   })
 ```
+
 # COUNT METHODS (PURELY TAXONOMIC STUDIES EXCLUDED)
 
-Create 
+Create data frame with subset
 
 ```{r}
 split_columns_methods <- methods
@@ -752,7 +763,7 @@ write.xlsx(split_results_methods,
 
 Create bar charts per each parameter collected
 
-```{r Create bar charts per each parameter collected}
+```{r barchart_split_methods}
 barchart_func = function(dat,var) {
   
  ggplot(dat, 
@@ -790,7 +801,7 @@ lapply(names(barchart_counts), function(x){
   ggsave(filename=paste0("bar_",x,".tiff"), 
          plot=barchart_counts[[x]],
          units = "in", width=12, height=4, dpi=300, compression = 'lzw',
-         path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization",,"Barcharts_split_methods"), create.dir = T
+         path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization","Barcharts_split_methods"), create.dir = T
          )
   })
 
@@ -798,7 +809,7 @@ lapply(names(barchart_counts), function(x){
   ggsave(filename=paste0("bar_",x,".png"), 
          plot=barchart_counts[[x]],
          units = "in", width=12, height=4, dpi=300,
-         path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization",,"Barcharts_split"), create.dir = T
+         path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization","Barcharts_split"), create.dir = T
          )
   })
 ```
@@ -875,7 +886,7 @@ for (i in seq_along(bins)) {
     
     # Count how many studies cover this bin
     count <- sum(subset_data$maximumSurveyedDepthInMeters >= bin_start &
-                 subset_data$mininumSurveyedDepthInMeters <= bin_end, na.rm = TRUE)
+                 subset_data$mininumSurveyedDepthInMeters < bin_end, na.rm = TRUE)
     
     # Append to results
     pub_depth_lat <- rbind(pub_depth_lat, data.frame(
@@ -915,14 +926,14 @@ ggsave("pub_depth_lat_bar.png",
 
 # PLATFORM BY DEPTH AND latitudinalRegion
 
-Create a platform by depth data frame and keep samplingUnitPlatform
+Create a platform by depth data frame and keep meso_samplingPlatform
 
-```{r Create a platform by depth data frame and keep samplingUnitPlatform}
+```{r Create a platform by depth data frame and keep meso_samplingPlatform}
 
 platform_depth_lat <- raw %>%
   select(File, mininumSurveyedDepthInMeters,maximumSurveyedDepthInMeters,
          latitudinalRegion, meso_direct_indirect,
-         samplingUnitPlatform,
+         meso_samplingPlatform,
          max_depth_hov, min_depth_hov, 
          max_depth_rov, min_depth_rov,
          max_depth_ccr, min_depth_ccr,
@@ -937,7 +948,7 @@ Split the platform column in one binary column per platform
 platform_lat_lvls <- 
   unique(
     unlist(
-      str_split(platform_depth_lat$samplingUnitPlatform, "\\+")
+      str_split(platform_depth_lat$meso_samplingPlatform, "\\+")
                                )
                         )
 
@@ -945,7 +956,7 @@ platform_lat_lvls<- platform_lat_lvls[! platform_lat_lvls %in% c("",NA,"notapp",
 
 platform_depth_lat[,platform_lat_lvls] <- sapply(platform_lat_lvls, 
                                       function(y){
-                                        str_count(platform_depth_lat$samplingUnitPlatform, y)
+                                        str_count(platform_depth_lat$meso_samplingPlatform, y)
                                         }
                                       )
 
@@ -960,7 +971,7 @@ platform_depth_lat %<>%
   rename(open_direct = open,
          ccr_direct = ccr,
          scuba_direct = scuba)  %>%
-  select(-samplingUnitPlatform)
+  select(-meso_samplingPlatform)
 ```
 
 Create a summary table with # studies per platform 
@@ -1144,7 +1155,7 @@ platform_depth_lat_long %<>%
 
 Create a bar plot with depth bins by platform and latitudinalRegion
 
-```{r Create a bar plot with depth bins by platform and latitudinalRegion}
+```{r  platform_depth_lat_plot barplot}
 # Define 10-m bins between -30 and -150
 bin_edges <- seq(-31, -151, by = -10)
 
@@ -1190,6 +1201,7 @@ platform_depth_lat_plot <- ggplot(expanded_data, aes(x = bin_label, fill = latit
 
 platform_depth_lat_plot
 ```
+
 Export bar plot of most common platform per depth interval by latitudinalRegion
 
 ```{r Export bar plot of most common platform per depth interval by latitudinalRegion}
@@ -1197,12 +1209,12 @@ Export bar plot of most common platform per depth interval by latitudinalRegion
 ggsave("platform_depth_lat_plot.tiff", 
        plot = platform_depth_lat_plot,
        units = "in", width = 8, height = 6, dpi = 300, compression = 'lzw',
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 
 ggsave("platform_depth_lat_plot.png",
        plot = platform_depth_lat_plot,
        units = "in", width = 8, height = 5,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis", "global",                      "Output-Visualization"))
 ```
 
 # DIRECT - INDIRECT BY DECADE
@@ -1272,12 +1284,12 @@ Export bar plot of technique by decade
 ggsave("technique_decade_barplot.tiff", 
        plot = technique_decade_barplot,
        units = "in", width = 7, height = 6, dpi = 300, compression = 'lzw',
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 
 ggsave("technique_decade_barplot.png",
        plot = technique_decade_barplot,
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 Technique by decade for temperate and tropical ecosystems
@@ -1396,7 +1408,8 @@ technique_decade_env_barplot <- ggplot(plot_data,
     axis.title.y = element_text(size = 13),
     strip.text = element_text(size = 13)
   ) +
-  labs(y = "Number of publications")
+  labs(y = "Number of publications",
+       fill = "Latitudinal region")
 
 technique_decade_env_barplot
 ```
@@ -1407,12 +1420,12 @@ Export bar plot of technique by decade
 ggsave("technique_decade_env_barplot.tiff", 
        plot = technique_decade_env_barplot,
        units = "in", width = 7, height = 6, dpi = 300, compression = 'lzw',
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 
 ggsave("technique_decade_env_barplot.png",
        plot = technique_decade_env_barplot,
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 # FIELD & INDICATORS
@@ -1420,60 +1433,42 @@ ggsave("technique_decade_env_barplot.png",
 Create subset for field & indicators
 
 ```{r Clean field_merged data frame }
-field_merged <- field_merged[,c(59:length(field_merged))]
+field_merged <- raw[,c(59:length(raw))]
 
-field_merged %<>% replace(is.na(.), 0)
+field_merged[,] <- lapply(field_merged[,], as.numeric)
 
-field_merged %<>%
-  mutate(across(everything(), ~replace(., . ==  2 , 1))) # replace 2 with one where "taxo" was marked both as a field and an aim
-
-field_merged[,c(2:length(field_merged))] <- lapply(field_merged[,c(2:length(field_merged))], as.numeric)
-
-field_common_matrix <- field_merged[,-1]
-
-field_common_matrix %<>% replace(is.na(.), 0)
-
-field_common_matrix %<>%
-  mutate(across(everything(), ~replace(., . ==  2 , 1)))
-
-field_common_matrix <- as.data.frame(field_common_matrix)
-
-colSums(field_common_matrix)
+colSums(field_merged)
 ```
-
 Select only the most common fields
 
 ```{r Select only the most common fields }
-field_common_matrix <- field_common_matrix[, colSums(field_common_matrix) > 100]
+field_merged <- field_merged[, colSums(field_merged) > 120]
 
-field_common_matrix$eco <- NULL
-field_common_matrix$ec <- NULL
-field_common_matrix$con <- NULL
-field_common_matrix$Taxonomy <- NULL
+field_merged$field_Taxonomy <- NULL
 
-colSums(field_common_matrix)
+colSums(field_merged)
 
 
-field_common_matrix <- field_common_matrix[, order(colSums(field_common_matrix), decreasing = F)]
+field_merged <- field_merged[, order(colSums(field_merged), decreasing = F)]
 
-colSums(field_common_matrix)
+colSums(field_merged)
 ```
-
 Rename fields with long version names
+
 ```{r Rename fields with long version names}
-field_common_matrix %<>%
-  rename(`Biodiversity and \n community structure (412)` = commdesc,
-         `Distribution and \n connectivity (322)` = dist,
-         `Conservation and \n management (121)` = cons,
-         `Disturbances (254)` = impass,
-         `Mapping (180)` = map,
-         `Physiology (168)` = physio,
-         `Taxonomy (148)` = taxo,
-         `Molecular ecology (105)` = Molecular_ecology,
-         `Acoustics (127)` = Acoustics,
-         `Oceanography (141)` = Oceanography
+field_merged %<>%
+  rename(`Biodiversity and \n community structure (412)` = field_commdesc,
+         `Distribution and \n connectivity (324)` = field_dist,
+         `Conservation and \n management (121)` = field_cons,
+         `Disturbances (254)` = field_impass,
+         `Mapping (180)` = field_map,
+         `Physiology (162)` = field_physio,
+         `Taxonomy (148)` = field_taxo,
+         `Molecular ecology (159)` = field_Molecular_ecology,
+         `Acoustics (127)` = field_Acoustics,
+         `Environmental drivers and \n spatio-temporal patterns (267)` = field_environmental_drivers
          )
-colSums(field_common_matrix)
+colSums(field_merged)
 ```
 
 Prepare the indicator matrix 
@@ -1489,8 +1484,6 @@ colSums(ind_matrix)
 
 ind_common_matrix <- ind_matrix[, colSums(ind_matrix) > 30]
 
-ind_common_matrix<- ind_common_matrix[, colnames(ind_common_matrix) != 'phylo']
-
 ind_common_matrix <- ind_common_matrix[, order(colSums(ind_common_matrix), decreasing = TRUE)]
 
 ind_common_matrix <- as.data.frame(ind_common_matrix)
@@ -1498,40 +1491,43 @@ ind_common_matrix <- as.data.frame(ind_common_matrix)
 ind_common_matrix <- ind_common_matrix[!purrr::map_lgl(ind_common_matrix, ~ all(is.na(.)))] # remove empty column
 ```
 
+Remove taxonomy studies which have a dedicated section
+
+```{r}
+field_merged$`Taxonomy (148)` <- NULL
+ind_common_matrix$taxo <- NULL
+
+colSums(ind_common_matrix)
+```
+
 Rename indicators with long version names
 
 ```{r}
 ind_common_matrix %<>%
-  rename(`Abundance \n (344)` = abundance,
-         `Cover \n (309)` = cover,
-         `Diversity \n (454)` = diversity,
-         `Habitat \n (180)` = habtype,
-         `Morphology \n (242)` = morpho,
-         `Size \n (218) ` = size,
-         Taxonomy = taxo,
-         `Biomass \n (68)` = biomass,
-         `Density \n (219)` = density,
+  rename(`Abundance \n (344)` = Abundance,
+         `Cover \n (309)` = Cover,
+         `Diversity \n (455)` = Diversity,
+         `Habitat \n (180)` = Habitat,
+         `Morphology \n (242)` = Morphological,
+         `Size \n (218) ` = Size,
+         `Biomass \n (68)` = Biomass,
+         `Density \n (219)` = Density,
          `Growth \n rate (42)` = growth,
-         `Health \n (91)`= health,
-         `Physiological \n indicator \n (119)` = physio,
-         `Ghost \n nets \n (64)` = ghost,
-         `Litter \n (55)` = litter, 
-         `Behaviour \n (38)`= beha,
-         `Trophic \n (61)` = troph
+         `Health \n (89)`= Health,
+         `Physiological \n indicator \n (127)` = Physiological,
+         `ALDFGs \n (64)` = ALDFGs,
+         `Litter \n (55)` = Litter, 
+         `Behaviour \n (39)`= Behaviour,
+         `Trophic \n (63)` = Trophic
          )
-```
 
-Remove taxonomy studies which have a dedicated section
-
-```{r}
-field_common_matrix$`Taxonomy (148)` <- NULL
-ind_common_matrix$Taxonomy <- NULL
+colSums(ind_common_matrix)
 ```
 
 Multiply the transpose of the field matrix with the indicator matrix
 
 ```{r Multiply the transpose of the field matrix with the indicator matrix}
-co_occurrence_matrix <- t(as.matrix(field_common_matrix)) %*% as.matrix(ind_common_matrix)
+co_occurrence_matrix <- t(as.matrix(field_merged)) %*% as.matrix(ind_common_matrix)
 ```
 
 Reshape the co-occurrence matrix for plotting}
@@ -1560,7 +1556,7 @@ Export plot
 ```{r export field_ind_heat}
 ggsave("field_ind_heat.png", 
        units = "in", width = 11, height = 5.5,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis", "global",                        "Output-Visualization"))
 ```
 
 ## Calculate # of ecological indicators per record
@@ -1627,6 +1623,7 @@ rm(sampling_lvls)
 
 colnames(sampling_df)
 ```
+
 ## Calculate # of sampling unit per record
 
 Create a column with the sum of sampling units values to see how many different sampling units were adopted by each study
@@ -1745,7 +1742,7 @@ ggplot(sampling_unit_simplified,
            label=paste0(Sampling_unit_macro, " \n ",Percentage_macro,"%"))
        )+ 
   treemapify::geom_treemap(layout = "squarified")+ 
-  geom_treemap_text(place = "centre",
+  geom_treemap_text(place = "centre", fontface = "bold",
                     size = 20)+
     theme(plot.title = element_text(hjust = 0.5, size= 20),
           legend.position = "none")+
@@ -1760,7 +1757,9 @@ Export sampling_simplified_treemap
 ggsave("sampling_simplified_treemap.png", 
        plot = sampling_simplified_treemap, 
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",
+                    "global",
+                    "Output-Visualization"))
 ```
 
 Export sampling_unit_tot table for supplementary materials
@@ -1788,6 +1787,8 @@ quad_design <- subset(quad_design,grepl("trans", design) |  grepl("trans", meso_
 ```{r}
 data_type <- count_results[["collectedDataType"]] 
 
+data_type$Percentage <- round(data_type$Percentage, 1)
+
 data_type
 ```
 
@@ -1809,7 +1810,20 @@ data_type_simplified <- data_type %>%
   )
 
 
-
+data_type_simplified %<>%
+       mutate(`Data type` = 
+                case_when(`Data type` == 'photo'  ~ "Photo",
+                          `Data type` == "video"~ "Video",
+                          `Data type` == "other" ~ "Other",
+                          `Data type` == "specimen" ~ "Specimen",
+                          `Data type` == "photo+specimen" ~ "Photo + \n Specimen",
+                          `Data type` == "photo+specimen+video" ~ "Photo + Video + \n Specimen",
+                          `Data type` == "photo+video" ~ "Photo + \n Video",
+                          `Data type` == "photo+visual" ~ "Photo + \n Visual",
+                          `Data type` == "specimen+visual" ~ "Specimen + \n Visual",
+                          `Data type` == "specimen+video" ~ "Specimen + \n Video",
+                                  .default = "Other")
+              )
 ```
 
 Build a treemap with data type
@@ -1826,7 +1840,7 @@ ggplot(data_type_simplified,
            label=paste0(`Data type`, " \n ",Percentage,"%"))
        )+ 
   treemapify::geom_treemap(layout = "squarified")+ 
-  geom_treemap_text(place = "centre",
+  geom_treemap_text(place = "centre", fontface = "bold",
                     size = 20)+
     theme(plot.title = element_text(hjust = 0.5, size= 20),
           legend.position = "none")+
@@ -1841,7 +1855,7 @@ Export sampling_simplified_treemap
 ggsave("data_type_treemap.png", 
        plot = data_type_treemap, 
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 
@@ -1914,7 +1928,7 @@ Export habit_donut
 ggsave("habit_donut.png", 
        plot = habit_donut, 
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 # SUBSTRATE
@@ -2009,7 +2023,7 @@ Export the substrate donut plot
 ggsave("substrate_donut.png", 
        plot = substrate_donut,
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 # BENTHIC POSITION
@@ -2101,7 +2115,7 @@ Export the benthic_position donut plot
 ggsave("benthic_position_donut.png", 
        plot = benthic_position_donut, 
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 # TARGET 
@@ -2132,8 +2146,8 @@ target_level <- target_level %>%
   )
 ```
 
-
-```{r}
+Treemap with the taxonomic target level
+```{r Treemap with the taxonomic target level}
 ggplot(target_level,
        aes(area=Count,
            fill=Level,
@@ -2148,10 +2162,7 @@ ggplot(target_level,
     theme(plot.title = element_text(hjust = 0.5, size= 20),
           legend.position = "none")+
   scale_fill_manual(values= c("#66C2A5","#E78AC3" , "#8DA0CB","#FFD92F","#B3B3B3", "#E5C494","#FC8D62","#A6D854"))
-  
-```
 
-```{r}
 target_level_labels <- target_level %<>%
   mutate(
     Level = case_when(Level == "comm" ~ "Community",
@@ -2163,10 +2174,7 @@ target_level_labels <- target_level %<>%
                       Level == "group+species" ~ "Group+\nSpecies", 
                       Level == "Other combinations" ~ "Other")
     )
-```
 
-
-```{r}
 target_level_treemap <- ggplot(target_level_labels,
        aes(area=Count,
            fill=Level,
@@ -2188,7 +2196,7 @@ target_level_treemap
 ggsave("target_level_treemap.png",
        plot = target_level_treemap,
        units = "in", width = 9, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 
@@ -2197,57 +2205,53 @@ ggsave("target_level_treemap.png",
 ```{r}
 detected <- raw %>% 
     filter(str_detect(taxonomicTargetLevel,"comm")) %>%
-  select(File, detected_meso_cnidaria, detected_meso_sponges, detected_meso_seagrass, detected_meso_algae, detected_meso_mollusca, detected_meso_chondrichthyes, detected_meso_fish, detected_meso_crustacea, detected_meso_echino, detected_meso_other_taxa)
+  select(File, 
+         detected_meso_cnidaria, 
+         detected_meso_sponges, 
+         detected_meso_seagrass, 
+         detected_meso_algae, 
+         detected_meso_mollusca, 
+         detected_meso_chondrichthyes, 
+         detected_meso_fish, 
+         detected_meso_crustacea, 
+         detected_meso_echino, 
+         detected_meso_other_taxa)
 ```
 
-```{r}
-for (i in seq(from = 3, to = length(detected),by = 2)) {
-  if (any(is.na(detected[, i]))) {  # Check if there are NA values in the column
-    detected[, i] <- ifelse(is.na(detected[, i]), 
-                                 detected[, i-1], 
-                                 detected[, i])
-  }
-}
-rm(i)
-```
-
-```{r}
-detected %<>%
-    select(starts_with("meso"))
-```
 
 ```{r}
 detected_lvls <- 
   unique(
     unlist(
-      str_split(detected$meso_other_taxa, "\\+")
+      str_split(detected$detected_meso_other_taxa, "\\+")
                                )
                         )
 detected_lvls<- detected_lvls[! detected_lvls %in% c("",NA,"notapp",",","nd")]
 detected[,detected_lvls] <- sapply(detected_lvls, 
                                       function(y){
-                                        str_count(detected$meso_other_taxa, y)
+                                        str_count(detected$detected_meso_other_taxa, y)
                                         }
                                       )
 
 rm(detected_lvls)
-```
 
+detected %<>%
+  mutate(across(everything(), as.character)) %>%
+  replace(is.na(.), "0") %>%
+  select(-detected_meso_other_taxa) %>%
+  filter(across(everything(), ~ !grepl("notapp", .x)))
+
+detected <- detected %>%
+  mutate(across(-File, ~ case_when(
+    .x %in% c("x", "x,", "xx") ~ "1",
+    .x == "," ~ "0",
+    TRUE ~ .x
+  ))) %>%
+  mutate(across(-File, as.numeric))  
+```
+Calculate number of publications per taxonomic group 
 
 ```{r}
-detected %<>% replace(is.na(.), 0) %>%
-  select(-meso_other_taxa) %>%
-  filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x))
-         )
-
-detected[detected=="x"]<-1
-detected[detected=="x,"]<-1
-detected[detected=="xx"]<-1
-detected[detected==","]<-0
-
-detected[,] <- lapply(detected[,], as.numeric)
-
 detected_tot <- 
   detected %>%
   summarise(across(where(is.numeric), 
@@ -2263,7 +2267,7 @@ detected_tot %<>%
         mutate_at("Taxa", 
                   stringr::str_replace, "_1", "") %>%
         mutate_at("Taxa", 
-                  stringr::str_replace, "meso_", "")
+                  stringr::str_replace, "detected_meso_", "")
 
     
 detected_tot %<>%
@@ -2272,7 +2276,9 @@ detected_tot %<>%
 rm(detected)
 ```
 
-```{r}
+Merge poorly represented taxonomic groups into "Other"
+
+```{r Merge poorly represented taxonomic groups into "Other"}
 detected_tot_collapsed <- detected_tot %>%
   mutate(Taxa = if_else(Percentage < 3, "Other", Taxa)) %>%
   group_by(Taxa) %>%
@@ -2283,18 +2289,10 @@ detected_tot_collapsed <- detected_tot %>%
 
 ```
 
-```{r}
-detected_tot_collapsed <- detected_tot %>%
-  mutate(Taxa = if_else(Percentage < 3, "Other", Taxa)) %>%
-  group_by(Taxa) %>%
-  summarise(
-    Count = sum(Count),
-    Percentage = sum(Percentage),
-    .detecteds = "drop"
-  )
-```
+Create a bar chart with detected taxonomic groups
 
-```{r}
+```{r detected_bar}
+
 detected_bar <- ggplot(detected_tot_collapsed, aes(x = reorder(Taxa, Count), y = Count, fill= Taxa)) +
   geom_bar(stat = "identity") +
   geom_text(
@@ -2304,13 +2302,13 @@ detected_bar <- ggplot(detected_tot_collapsed, aes(x = reorder(Taxa, Count), y =
     color = "black",
     size = 3.5
   )+
-  labs(y = "# Publications at the community level", x = "Detected taxonomic group") +
+  labs(y = "N of publications at the community level", x = "Detected taxonomic group") +
   theme_minimal() +
   coord_flip()+  # optional: flips for horizontal bars
   theme(legend.position ="none")+
   scale_x_discrete(labels = rev(c("Cnidaria",
                                 "Porifera",
-                                "algae*",
+                                "macroalgae*",
                                 "Echinodermata",
                                 "Bryozoa",
                                 "Mollusca",
@@ -2326,10 +2324,7 @@ detected_bar <- ggplot(detected_tot_collapsed, aes(x = reorder(Taxa, Count), y =
                             "Foraminifera",
                             "Nemertea",
                             "Nematoda")))
-```
 
-
-```{r}
 detected_palette <- c("algae" ="darkseagreen3",
                       "cnidaria" = "mediumvioletred",
                       "crustacea" = "indianred1",
@@ -2362,81 +2357,40 @@ detected_bar +
 ```{r}
 ggsave("detected_bar.png", 
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
-```
-
-### Check NA/notapp/nd values for detected taxa
-
-Find rows within the "detected" data frame with all NAs (no reported taxa)
-
-```{r}
-
-detected %>% 
-  filter(if_all(cnidaria:meso_other_taxa, is.na))
-```
-
-
-
-
-```{r}
-print(paste("nd", nrow(subset(raw, raw$meso_target_taxa == "nd"))))
-
-print(paste("notapp", nrow(subset(raw, raw$meso_target_taxa == "notapp"))))
-
-print(paste("assigned", nrow(subset(raw, !is.na(raw$meso_target_taxa) & raw$meso_target_taxa != "nd" & raw$meso_target_taxa != "notapp"))))
-
-print(paste("NA", sum(is.na(raw$meso_target_taxa))))
-
-print(paste("total filled cells", nrow(subset(raw, raw$meso_target_taxa == "nd")) + nrow(subset(raw, raw$meso_target_taxa == "notapp")) + nrow(subset(raw, !is.na(raw$meso_target_taxa) & raw$meso_target_taxa != "nd" & raw$meso_target_taxa != "notapp"))))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 ## Target taxonomic groups not at the community level
 
 ```{r create group data frame}
 group <- raw %>% 
-    filter(comm_group_species != "comm" | 
-         taxonomicTargetLevel != "comm") %>%
+    filter(taxonomicTargetLevel != "comm") %>%
   select(File, 
-         cnidaria, meso_cnidaria,
-             sponges, meso_sponges,
-         seagrass, meso_seagrass,
-             algae, meso_algae,
-             mollusca, meso_mollusca,
-             chondrichthyes, meso_chondrichthyes,
-             fish, meso_fish,
-             crustacea, meso_crustacea,
-         echino, meso_echino,
-             other_taxa, meso_other_taxa,
-         target_taxa, meso_target_taxa)
+         detected_meso_cnidaria, 
+         detected_meso_sponges, 
+         detected_meso_seagrass, 
+         detected_meso_algae, 
+         detected_meso_mollusca, 
+         detected_meso_chondrichthyes, 
+         detected_meso_fish, 
+         detected_meso_crustacea, 
+         detected_meso_echino, 
+         detected_meso_other_taxa,
+         targetTaxa)
 ```
 
-```{r}
-for (i in seq(from = 3, to = length(group),by = 2)) {
-  if (any(is.na(group[, i]))) {  # Check if there are NA values in the column
-    group[, i] <- ifelse(is.na(group[, i]), 
-                                 group[, i-1], 
-                                 group[, i])
-  }
-}
-rm(i)
-```
-
-```{r}
-group %<>%
-    select(starts_with("meso"))
-```
 
 ```{r}
 group_lvls <- 
   unique(
     unlist(
-      str_split(group$meso_other_taxa, "\\+")
+      str_split(group$detected_meso_other_taxa, "\\+")
                                )
                         )
 group_lvls<- group_lvls[! group_lvls %in% c("",NA,"notapp",",","nd")]
 group[,group_lvls] <- sapply(group_lvls, 
                                       function(y){
-                                        str_count(group$meso_other_taxa, y)
+                                        str_count(group$detected_meso_other_taxa, y)
                                         }
                                       )
 
@@ -2445,20 +2399,21 @@ rm(group_lvls)
 
 
 ```{r}
-group %<>% replace(is.na(.), 0) %>%
-  select(-meso_other_taxa) %>%
-  filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x))
-         )
+group <- group %>%
+  mutate(across(everything(), as.character)) %>%
+  replace(is.na(.), "0") %>%
+  select(-detected_meso_other_taxa,-targetTaxa) %>%
+  filter(across(everything(), ~ !grepl("notapp", .x))) %>%
+  mutate(across(-File, ~ case_when(
+    .x %in% c("x", "x,", "xx") ~ "1",
+    .x == "," ~ "0",
+    TRUE ~ .x
+  ))) %>%
+  mutate(across(-File, as.numeric))
+```
 
-group[group=="x"]<-1
-group[group=="x,"]<-1
-group[group=="xx"]<-1
-group[group==","]<-0
-group$meso_target_taxa <- NULL
 
-group[,] <- lapply(group[,], as.numeric)
-
+```{r}
 group_tot <- 
   group %>%
   summarise(across(where(is.numeric), 
@@ -2474,7 +2429,7 @@ group_tot %<>%
         mutate_at("Taxa", 
                   stringr::str_replace, "_1", "") %>%
         mutate_at("Taxa", 
-                  stringr::str_replace, "meso_", "")
+                  stringr::str_replace, "detected_meso_", "")
 
     
 group_tot %<>%
@@ -2503,7 +2458,7 @@ group_tot_collapsed %<>%
                           Taxa == "sponges" ~ "Porifera",
                           Taxa == "crustacea" ~ "Crustacea",
                           Taxa == "cnidaria" ~ "Cnidaria",
-                          Taxa == "algae" ~ "algae*",
+                          Taxa == "algae" ~ "macroalgae*",
          .default = Taxa))
 ```
 
@@ -2518,15 +2473,12 @@ group_bar <- ggplot(group_tot_collapsed, aes(x = reorder(Taxa, Count), y = Count
     color = "black",
     size = 3.5
   )+
-  labs(y = "# Publications not at community level", x = "Taxonomic group") +
+  labs(y = "N of publications not at community level", x = "Taxonomic group") +
   theme_minimal() +
   coord_flip()+  # optional: flips for horizontal bars
   theme(legend.position ="none")
 
-```
-
-```{r}
-group_palette <- c("algae*" ="darkseagreen3",
+group_palette <- c("macroalgae*" ="darkseagreen3",
                       "Cnidaria" = "mediumvioletred",
                       "Crustacea" = "indianred1",
                       "Porifera" = "khaki1",
@@ -2555,77 +2507,63 @@ Export bar plot
 ggsave("group_bar.png", 
        plot = group_bar,
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 ## New species described per phyla
 
 ```{r}
 new_spec <- raw %>%
-  filter(str_detect(taxonomic_publication, "taxa") | str_detect(rc, "taxa")) %>%
-  filter(!grepl("fishy",taxonomic_publication) | !grepl("fishy",rc))
+  filter(str_detect(taxonomic_publication, "taxa")) 
 
 new_spec %<>% 
-  select(File,
-             cnidaria, meso_cnidaria,
-             sponges, meso_sponges,
-         seagrass, meso_seagrass,
-             algae, meso_algae,
-             mollusca, meso_mollusca,
-             chondrichthyes, meso_chondrichthyes,
-             fish, meso_fish,
-             crustacea, meso_crustacea,
-         echino, meso_echino,
-             other_taxa, meso_other_taxa)
+  select(File, 
+         detected_meso_cnidaria, 
+         detected_meso_sponges, 
+         detected_meso_seagrass, 
+         detected_meso_algae, 
+         detected_meso_mollusca, 
+         detected_meso_chondrichthyes, 
+         detected_meso_fish, 
+         detected_meso_crustacea, 
+         detected_meso_echino, 
+         detected_meso_other_taxa)
 ```
 
-```{r}
-for (i in seq(from = 3, to = length(new_spec),by = 2)) {
-  if (any(is.na(new_spec[, i]))) {  # Check if there are NA values in the column
-    new_spec[, i] <- ifelse(is.na(new_spec[, i]), 
-                                 new_spec[, i-1], 
-                                 new_spec[, i])
-  }
-}
-rm(i)
-new_spec[new_spec == ","] <- NA # this line could be deleted once I'll have a clean raw file
-new_spec[new_spec == "x,"] <- "x"# this line could be deleted once I'll have a clean raw file
-```
-
-```{r}
-new_spec %<>%
-    select(starts_with("meso")) 
-```
 
 ```{r}
 new_spec_lvls <- 
   unique(
     unlist(
-      str_split(new_spec$meso_other_taxa, "\\+")
+      str_split(new_spec$detected_meso_other_taxa, "\\+")
                                )
                         )
 new_spec_lvls<- new_spec_lvls[! new_spec_lvls %in% c("",NA,"notapp")]
 new_spec[,new_spec_lvls] <- sapply(new_spec_lvls, 
                                       function(y){
-                                        str_count(new_spec$meso_other_taxa, y)
+                                        str_count(new_spec$detected_meso_other_taxa, y)
                                         }
                                       )
 
 rm(new_spec_lvls)
 ```
 
+```{r}
+new_spec  %<>%
+  mutate(across(everything(), as.character)) %>%
+  replace(is.na(.), "0") %>%
+  select(-detected_meso_other_taxa) %>%
+  filter(across(everything(), ~ !grepl("notapp", .x))) %>%
+  mutate(across(-File, ~ case_when(
+    .x %in% c("x") ~ "1",
+    TRUE ~ .x
+  ))) %>%
+  mutate(across(-File, as.numeric))
+```
+
+
 
 ```{r}
-new_spec %<>% replace(is.na(.), 0) %>%
-  select(-meso_other_taxa) %>%
-  filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x))
-         )
-
-new_spec[new_spec=="x"]<-1
-
-new_spec[,] <- lapply(new_spec[,], as.numeric)
-
 new_spec_tot <- 
   new_spec %>%
   summarise(across(where(is.numeric), 
@@ -2642,14 +2580,12 @@ new_spec_tot %<>%
         mutate_at("Taxa", 
                   stringr::str_replace, "_1", "") %>%
           mutate_at("Taxa", 
-                  stringr::str_replace, "meso_", "")
+                  stringr::str_replace, "detected_meso_", "")
   
     
 new_spec_tot %<>%
   filter(Count>0) %>%
       mutate(Percentage= round(Count / sum(Count) * 100,1))  
-
-new_spec_tot$Taxa
 ```
 
 ```{r}
@@ -2664,11 +2600,11 @@ new_spec_plot <-   ggplot(new_spec_tot,
     color = "black",
     size = 3.5
   )+
-  labs(y = "# Publications with new species descriptions", x = "Taxonomic group") +
+  labs(y = "N of Publications with new species descriptions", x = "Taxonomic group") +
   theme_minimal() +
   coord_flip()+  # optional: flips for horizontal bars
   theme(legend.position ="none")+
-  scale_x_discrete(labels = rev(c("algae*",
+  scale_x_discrete(labels = rev(c("macroalgae*",
                                 "Cnidaria",
                                 "Crustacea",
                                 "Porifera",
@@ -2700,9 +2636,7 @@ new_spec_palette <- c("algae" ="darkseagreen3",
                       "Ciliata" = "gray69",
                       "Bryozoa" = "goldenrod1",
                       "Annelida" = "burlywood4")
-```
 
-```{r}
 new_species_bar <- new_spec_plot +
   scale_fill_manual(values = new_spec_palette,
     limits = names(new_spec_palette))+
@@ -2719,245 +2653,108 @@ Export bar plot
 ggsave("new_species_bar.png", 
        plot = new_species_bar,
        units = "in", width = 7, height = 6,
-       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization",))
+       path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
 ## New species descriptions that included molecular analyses
 
 ```{r}
 new_spec_molecular <- raw %>%
-  filter(str_detect(taxonomic_publication, "taxa") | str_detect(rc, "taxa")) %>%
-  select(File,genetic, molecularAnalyses)
-
-new_spec_molecular  
-```
-
-
-```{r}
-new_spec_molecular$molecularAnalyses <- ifelse(is.na(new_spec_molecular$molecularAnalyses), 
-                                 new_spec_molecular$genetic, 
-                                 new_spec_molecular$molecularAnalyses)
+  filter(str_detect(taxonomic_publication, "taxa") &
+           molecularAnalyses != "no" &
+           molecularAnalyses != "nd")
 ```
 
 # DATA CROSSING
 
-
-## SURFACE
-
-```{r}
-raw$samplingUnitPlatform <- ifelse(is.na(raw$samplingUnitPlatform ), 
-                                 raw$platform, 
-                                 raw$samplingUnitPlatform )
-
-raw$meso_direct_indirect <- ifelse(is.na(raw$meso_direct_indirect ), 
-                                 raw$direct_indirect, 
-                                 raw$meso_direct_indirect )
-
-unique(raw$taxonomic_publication)
-
-nrow(subset(raw, raw$surface == "nd"))
-nrow(subset(raw, raw$surface == NA))
-```
+## VISUALLY SURVEYED SURFACE
 
 ```{r}
-nrow(subset(raw, is.na(raw$taxonomic_publication) & grepl(">100000", meso_surface)))
-     
-summary(as.factor(subset(raw, is.na(raw$taxonomic_publication) & grepl(">10000", meso_surface))$samplingUnitPlatform))
-
-nrow(subset(raw, is.na(raw$taxonomic_publication) & 
-                        grepl(">100000", meso_surface) &
-                        meso_direct_indirect != "direct"))
+raw$visuallySurveyedSurface <- as.factor(raw$visuallySurveyedSurface)
+summary(subset(raw, is.na(raw$taxonomic_publication))$visuallySurveyedSurface)
 ```
-
-
-```{r}
-unique(raw$meso_surface)
-
-nrow(is.na(raw$taxonomic_publication))
-
-nrow(subset(raw, is.na(raw$taxonomic_publication) & raw$meso_surface == "nd"))
-nrow(subset(raw, is.na(raw$taxonomic_publication) & raw$meso_surface == "notapp"))
-sum(is.na(raw$meso_surface))
-```
-
-```{r}
-raw$meso_surface <- as.factor(raw$meso_surface)
-summary(subset(raw, is.na(raw$taxonomic_publication))$meso_surface)
-```
-
 
 ## CCR and latitudinalRegion
 
 ```{r}
-nrow(subset(platform_depth_env,platform_depth_env$ccr_direct == 1 & grepl("tropical",platform_depth_env$latitudinalRegion)))
+nrow(subset(platform_depth_lat,platform_depth_lat$ccr_direct == 1 & grepl("tropical",platform_depth_lat$latitudinalRegion)))
 ```
 
 ```{r}
-nrow(subset(platform_depth_env,platform_depth_env$ccr_direct == 1 & grepl("temperate",platform_depth_env$latitudinalRegion)))
+nrow(subset(platform_depth_lat,platform_depth_lat$ccr_direct == 1 & grepl("temperate",platform_depth_lat$latitudinalRegion)))
 ```
 
 ```{r}
-nrow(subset(platform_depth_env,platform_depth_env$hov == 1 & grepl("tropical",platform_depth_env$latitudinalRegion)))
+nrow(subset(platform_depth_lat,platform_depth_lat$hov == 1 & grepl("tropical",platform_depth_lat$latitudinalRegion)))
 ```
 
 ```{r}
-nrow(subset(platform_depth_env,platform_depth_env$hov == 1 & grepl("temperate",platform_depth_env$latitudinalRegion)))
+nrow(subset(platform_depth_lat,platform_depth_lat$hov == 1 & grepl("temperate",platform_depth_lat$latitudinalRegion)))
 ```
 
 ```{r}
-nrow(subset(platform_depth_env,platform_depth_env$hov == 1))
+nrow(subset(platform_depth_lat,platform_depth_lat$hov == 1))
 ```
 
 ```{r}
-nrow(subset(platform_depth_env,platform_depth_env$hov == 1 & grepl("polar",platform_depth_env$latitudinalRegion)))
+nrow(subset(platform_depth_lat,platform_depth_lat$hov == 1 & grepl("polar",platform_depth_lat$latitudinalRegion)))
 ```
 
-
-## Campaign
-
-```{r}
-subset(raw,grepl("IMOS", raw$meso_protocol_campaign) |
-                 grepl("imos", raw$meso_protocol_campaign) |
-                 grepl("imos", raw$protocol_campaign) |
-                 grepl("IMOS", raw$protocol_campaign)
-               )
-```
-
-
-```{r}
-subset(raw,grepl("MSFD", raw$meso_protocol_campaign) |
-                 grepl("msfd", raw$meso_protocol_campaign) |
-                 grepl("MSFD", raw$protocol_campaign) |
-                 grepl("msfd", raw$protocol_campaign)
-               )
-```
 
 ## Observation
 
 ```{r}
-exp <- subset(raw,grepl("exp", raw$observationalORexperimental) | grepl("exp", raw$obs_exp ))
+print(paste("Number of manipulative experimental studies:",nrow(subset(raw, grepl("exp", raw$observationalORexperimental)))))
 
-nrow(exp)
-
-subset(exp, grepl("rest", exp$field))
+print(paste("Number of manipulative experimental studies in the field of restoration:", nrow(subset(raw, grepl("exp", raw$observationalORexperimental) & raw$field_rest != 0)
+                                                                                            )
+            )
+      )
 ```
-
 ## Temp replicates & exp
 
 ```{r # Publications that included temporal replicates}
-print(paste("# Publications that included temporal replicates:", nrow(subset(raw,grepl("yes", temp_replicates) | grepl("yes", temporalReplicates)))))
+print(paste("# Publications that included temporal replicates:", nrow(subset(raw, grepl("yes", temporalReplicates)))))
 ```
 
 ```{r  # Publications relying on a manipulative experiment that included temporal replicates}
-print(paste("# Publications that included temporal replicates:", nrow(subset(raw, (grepl("exp", raw$observationalORexperimental) | grepl("exp", raw$obs_exp)) & (grepl("yes", temp_replicates) | grepl("yes", temporalReplicates))))))
+print(paste("# Publications that included temporal replicates:", nrow(subset(raw, (grepl("exp", raw$observationalORexperimental) & grepl("yes", temporalReplicates))))))
 ```
 
 ## Health
 
 ```{r}
-raw %<>% mutate(molecularAnalyses = ifelse(is.na(molecularAnalyses), genetic,
-                                    molecularAnalyses)
-                )
+health <- subset(raw, grepl("Health", indicators) | grepl("Disease", indicators))
 
-health <- subset(raw,grepl("health", indicators) | grepl("disease", indicators))
-
-subset(health,grepl("notapp", meso_target_taxa))
-
-unique(health$target_taxa)
+unique(health$targetTaxa)
 ```
-
 ## ROV & sample
 
 ```{r}
-rov <- subset(raw, grepl("rov", samplingUnitPlatform) | grepl("rov", platform))
+rov <- subset(raw, grepl("rov", meso_samplingPlatform) )
 
-rov_sample <- subset(rov, grepl("sample", data_type) | grepl("sample", collectedDataType) )
+rov_specimen <- subset(rov,  grepl("specimen", collectedDataType) )
 
-print(paste("Percentage of publications relying solely on ROV where samples where collected:", round(nrow(rov_sample)/nrow(rov)*100,1),"%"))
+print(paste("Percentage of publications relying solely on ROV where specimens were collected:", round(nrow(rov_specimen)/nrow(rov)*100,1),"%"))
+
+rm(rov, rov_specimen)
 ```
 
 ## Molecular techniques in taxonomic and non-taxonomic studies
 
 ```{r Molecular techniques in non-taxonomic studies}
-raw$rc <- as.factor(raw$rc )
 raw$taxonomic_publication <- as.factor(raw$taxonomic_publication )
 
 molecular <- raw %>%
   filter(is.na(taxonomic_publication)) %>%
-  filter(molecularAnalyses != "no" | molecularAnalyses != "no")
+  filter(molecularAnalyses != "no")
 
 print(paste("# Publications that adopted molecular techniques: ",nrow(molecular)))
 
 molecular_notaxa <- raw %>%
-  filter(taxonomic_publication != "taxa" | rc != "taxa") %>%
-  filter(!grepl("fishy",taxonomic_publication) | !grepl("fishy",rc)) 
+  filter(taxonomic_publication != "taxa") 
 
 print(paste("# Publications that adopted molecular techniques not for taxonomy: ",nrow(molecular_notaxa)))
-```
 
-# REMOVED RECORDS
-
-```{r load REMOVED RECORDS}
-removed <- read.csv(here("Removed_records.csv"))
-
-removed <- removed[,colSums(is.na(removed))<nrow(removed)]
-
-str(removed)
-
-removed %<>% 
-  select(Publication.Year, Author,
-         Title, Publication.Title,
-         ISBN, ISSN, DOI, Date,
-         Publisher, Manual.Tags, 
-         Conference.Name)
-```
-
-Split the platform column in one binary column per platform 
-
-```{r Split the platform column in one binary column per RC}
-tags_lvls <- 
-  unique(
-    unlist(
-      str_split(removed$Manual.Tags, "\\;")
-                               )
-                        )
-tags_lvls<- tags_lvls[tags_lvls %in% c("NR", "fishy","RC0","RC1",
-                                       "RC2","RC3","RC4","RC5","RC6","RC7","RC8", "RC9",
-                                       "RC10", "RC11", "RC12")]
-removed[,tags_lvls] <- sapply(tags_lvls, 
-                                      function(y){
-                                        str_count(removed$Manual.Tags, y)
-                                        }
-                                      )
-
-rm(tags_lvls)
-
-removed$Manual.Tags <- NULL
-```
-
-```{r create removed summary}
-str(removed)
-
-removed_summary <- 
-  removed %>%
-  summarise(across(where(is.numeric), 
-                   list(sum)
-                   )
-            )
-
-removed_summary  <- reshape2::melt(removed_summary, id.vars = NULL) 
-
-colnames(removed_summary) <- c("Removal criterion", "Count")
-
-removed_summary %<>%
-        mutate_at("Removal criterion", 
-                  stringr::str_replace, "_1", "")
-
-```
-
-Export count per ecoregion to csv for the map in QGIS
-
-```{r export Removed_records_clean.csv, eval= F}
-write.csv(removed, 
-           here("Removed_records_clean.csv"))
+rm(molecular, molecular_notaxa)
 ```
