@@ -1518,7 +1518,8 @@ ind_common_matrix %<>%
          `ALDFGs \n (64)` = ALDFGs,
          `Litter \n (55)` = Litter, 
          `Behaviour \n (39)`= Behaviour,
-         `Trophic \n (63)` = Trophic
+         `Trophic \n (63)` = Trophic,
+         `Genetic \n sequence \n (159)` = geneticSequences
          )
 
 colSums(ind_common_matrix)
@@ -1555,7 +1556,7 @@ Export plot
 
 ```{r export field_ind_heat}
 ggsave("field_ind_heat.png", 
-       units = "in", width = 11, height = 5.5,
+       units = "in", width = 12.5, height = 5.5,
        path = here ("Extracted_data_analysis", "global",                        "Output-Visualization"))
 ```
 
@@ -1775,13 +1776,20 @@ openxlsx::write.xlsx(sampling_unit_tot,
 ## Quadrat extracted from transect
 
 ```{r}
-quad_design <- subset(raw,grepl("quad", samplingUnit) | grepl("quad", sampling) )
-```
+print(paste("Number of publications where quadrat is the sampling unit or one of the sampling unit: ",
+            nrow(quad_design <- subset(raw,grepl("quad", samplingUnit)
+                                       )                                                                  )
+            )
+)
 
-```{r}
-quad_design <- subset(quad_design,grepl("trans", design) |  grepl("trans", meso_design)   )
+print(paste("Number of publications where quadrats were collected along transects: ", nrow(subset(quad_design, 
+            grepl("transect\\(quadrat", meso_design) |
+              grepl("transect\\(depth\\(quadrat", meso_design)
+            )
+     )
+)
+)
 ```
-
 # DATA TYPE
 
 ```{r}
@@ -2662,11 +2670,17 @@ ggsave("new_species_bar.png",
 new_spec_molecular <- raw %>%
   filter(str_detect(taxonomic_publication, "taxa") &
            molecularAnalyses != "no" &
-           molecularAnalyses != "nd")
+           molecularAnalyses != "nd" &
+           molecularAnalyses != "notapp")
+
+nrow(new_spec_molecular)
 ```
 
 # DATA CROSSING
 
+```{r}
+table(raw$meso_protection)
+```
 ## VISUALLY SURVEYED SURFACE
 
 ```{r}
@@ -2675,6 +2689,10 @@ summary(subset(raw, is.na(raw$taxonomic_publication))$visuallySurveyedSurface)
 ```
 
 ## CCR and latitudinalRegion
+
+```{r}
+nrow(subset(platform_depth_lat,platform_depth_lat$ccr_direct == 1))
+```
 
 ```{r}
 nrow(subset(platform_depth_lat,platform_depth_lat$ccr_direct == 1 & grepl("tropical",platform_depth_lat$latitudinalRegion)))
@@ -2711,6 +2729,7 @@ print(paste("Number of manipulative experimental studies in the field of restora
             )
       )
 ```
+
 ## Temp replicates & exp
 
 ```{r # Publications that included temporal replicates}
@@ -2746,15 +2765,30 @@ rm(rov, rov_specimen)
 raw$taxonomic_publication <- as.factor(raw$taxonomic_publication )
 
 molecular <- raw %>%
-  filter(is.na(taxonomic_publication)) %>%
-  filter(molecularAnalyses != "no")
+  filter(molecularAnalyses != "no" & 
+           molecularAnalyses != "notapp" & 
+           molecularAnalyses != "nd")
 
 print(paste("# Publications that adopted molecular techniques: ",nrow(molecular)))
 
-molecular_notaxa <- raw %>%
-  filter(taxonomic_publication != "taxa") 
+molecular_notaxa <- molecular %>%
+  filter(is.na(taxonomic_publication))
 
 print(paste("# Publications that adopted molecular techniques not for taxonomy: ",nrow(molecular_notaxa)))
 
 rm(molecular, molecular_notaxa)
 ```
+## Most common target species 
+
+```{r}
+table(raw$targetTaxa)
+
+
+colnames(raw)
+print(paste("Publications on Corallium rubrum :", nrow(subset(raw, grepl("rubrum", targetTaxa)))))
+
+print(paste("Publications on Paramuricea clavata:", nrow(subset(raw, grepl("clavata", targetTaxa)))))
+
+print(paste("Publications on Montastraea cavernosa:", nrow(subset(raw, grepl("cavernosa", targetTaxa)))))
+```
+
