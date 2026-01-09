@@ -1,9 +1,0 @@
-"0","exp <- subset(raw,grepl(""exp"", raw$observationalORexperimental) | grepl(""exp"", raw$obs_exp ))"
-"1","[1m[33mError[39m in `x[r, vars, drop = drop]`:[22m
-[33m![39m Can't subset rows with `r`.
-[31m✖[39m Logical subscript `r` must be size 1 or 994, not 0.
-Backtrace:
-[90m  1. [39m[1mbase[22m::subset(...)
-[90m 10. [39m[1mvctrs[22m (local) `<fn>`()
-[90m 11. [39mvctrs:::stop_indicator_size(...)
-"
