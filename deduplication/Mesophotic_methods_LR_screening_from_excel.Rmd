@@ -1,0 +1,392 @@
+---
+title: "Methods in mesophotic research with a focus on ecological field studies -  deduplication script using RefDeduR"
+author: "Claudia Campanini"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The following script was adapted from RefDeduR official tutorial pipeline
+https://jxshen311.github.io/RefDeduR/articles/RefDeduR_tutorial.html 
+
+# Load packages
+
+```{r}
+#install.packages("revtools")
+library(revtools)
+
+#install.packages("devtools")
+#devtools::install_github("jxshen311/RefDeduR")
+library(RefDeduR)
+library(plyr) #to use rbind.fill 
+library(dplyr)
+library(zeallot)  # to use `%<-%`
+library(stringi) # to use stri_trans_general to transliterate references from the mesophotic.org database
+```
+# Pre-processing
+
+## SCOPUS
+
+### Transliterate non-ASCII characters
+
+Input file needs to be in the package folder (the function was not working otherwise -.-)
+Create a .bib empty file for the output in the output folder
+```{r}
+
+scopus_bib_input <- system.file("mesophotic_method_LR", "scopus_2023_11_27_complete.bib", package = "RefDeduR")
+
+scopus_bib_trans <- system.file("mesophotic_method_LR", "scopus_2023_11_27_complete_trans.bib", package = "RefDeduR")
+
+norm_transliteration(scopus_bib_input, scopus_bib_trans, method = c("greek_letter-name", "any-ascii"))
+```
+
+### Convert the bib file to df
+
+```{r}
+# Read the transliterated bibTex file into a data frame
+scopus_bib2df <- revtools::read_bibliography(scopus_bib_trans)  #  6702 rows
+
+# We can check the number of missing values in each column.
+# Pay attention to `title` column as we expect all records to have titles.
+# If your dataset has only a few NAs in title, maybe it is worth resolving the missing values manually. If your dataset has a substantial number of NAs in title (according to our experience, this is extremely rare), consider sub-setting the dataset and deduplicating separately.
+colSums(is.na(scopus_bib2df))
+```
+scopus_bib2df should have 6753 records, but some are damaged in the exported bib file and cannot be read 
+
+### Load scopus csv file 
+
+- 1. Load csv
+- 2. Check if there are records with no title
+```{r}
+scopus_csv2df <- read.csv("scopus_2023_11_27.csv")
+colSums(is.na(scopus_csv2df))
+```
+
+## Scopus df comparison
+Set `scopus_bib2df` and `scopus_csv2df` for comparison
+
+
+```{r}
+colnames(scopus_bib2df)
+colnames(scopus_csv2df)
+
+scopus_bib2df <- scopus_bib2df[,c(1:27,31)] #remove non-standards fields acquired from Scopus' manually added records (urldate, langeid, copyright,file, shorttitle)
+
+scopus_csv2df$label <- NA #create the "label" column in csv2df 
+scopus_csv2df$note <- NA #create the "label" column in csv2df 
+scopus_csv2df$booktitle <- NA #create the "label" column in csv2df
+  
+scopus_csv2df <- scopus_csv2df %>% 
+  rename(type = "Document.Type", 
+         author= "Authors" ,
+         year = "Year",
+         title = "Title",
+         journal ="Source.title", 
+         volume = "Volume",
+         number = "Issue",
+         doi = "DOI",
+         url ="Link",
+         affiliations = "Affiliations",
+         abstract = "Abstract",
+         author_keywords = "Author.Keywords", 
+         keywords= "Index.Keywords",
+         correspondence_address = "Correspondence.Address",
+         publisher = "Publisher",
+         issn = "ISSN",
+         language = "Language.of.Original.Document",
+         abbrev_source_title = "Abbreviated.Source.Title",
+         publication_stage = "Publication.Stage",
+         source = "Source",
+         coden = "CODEN",
+         pmid = "PubMed.ID",
+         pages = "Page.count",
+         isbn = "ISBN",
+         editor = "Editors",
+         pages = "Page.count") %>% 
+  mutate_all(as.character)
+
+
+scopus_csv2df <- select(scopus_csv2df, label, type, author,year, title,
+                                        journal, volume,number,doi,url,
+                                        affiliations,abstract,author_keywords, 
+                                        keywords,correspondence_address,
+                                        publisher,issn,language, abbrev_source_title,
+                                        publication_stage, source,
+                                        coden, pmid, pages, isbn, editor, pages, note, booktitle)
+
+```
+
+Compare scopus transliterated df from bib file and scopus from csv file
+Add missing records from csv2df to bib2df
+
+```{r}
+missing2bib <- anti_join(scopus_csv2df,scopus_bib2df,by=c("url")) #67 missing records (higher than the original difference of 52, there must be 15 not detected duplicates, so adding all the 67 records is conservative)
+
+scopus_merged_df <- full_join(scopus_bib2df,missing2bib)
+```
+## WEB OF SCIENCE CORE COLLECTION
+
+### Transliterate non-ASCII characters
+Input file needs to be in the package folder (the function was not working otherwise -.-)
+Create a .bib empty file for the output in the output folder
+```{r}
+wos_input <- system.file("mesophotic_method_LR", "wos_2023_11_23.bib", package = "RefDeduR")
+wos_trans <- system.file("mesophotic_method_LR", "wos_2023_11_23_trans.bib", package = "RefDeduR")
+norm_transliteration(wos_input, wos_trans, method = c("greek_letter-name", "any-ascii"))
+```
+
+### Convert the bib file to df
+
+```{r}
+# Read the transliterated bibTex file into a data frame
+wos_df <- revtools::read_bibliography(wos_trans)
+
+# We can check the number of missing values in each column.
+# Pay attention to `title` column as we expect all records to have titles.
+# If your dataset has only a few NAs in title, maybe it is worth resolving the missing values manually. If your dataset has a substantial number of NAs in title (according to our experience, this is extremely rare), consider sub-setting the dataset and deduplicating separately.
+colSums(is.na(wos_df))
+```
+### Remove/rename some columns to uniform with datasets from other databanks
+
+```{r}
+colnames(wos_df)
+colnames(scopus_merged_df)
+
+wos_df <- wos_df[,-c(24:33,35,36,38,46,47)]
+
+wos_df <- wos_df %>% 
+  rename(correspondence_address = "author_email")
+```
+
+## PUBLICATIONS FROM [Mesophotic.org](mesophotic.org)
+
+Load csv file with all references from Mesophotic.org publications databank
+Remove non-bibtex standard fields and rename the remaining columns according to bibtex standards
+
+```{r}
+meso_input <- read.csv("C:/Users/claud/Documents/COMUNE/R/R-4.3.2/RefDeduR/mesophotic_method_LR/mesophoticorg_all_2023_11_21.csv")
+
+meso_input <- meso_input[,c(5:10,13:17)]
+
+
+names(meso_input)[1] <- "type"
+names(meso_input)[2] <- "year"
+names(meso_input)[3] <- "author"
+names(meso_input)[5] <- "journal"
+names(meso_input)[10] <- "publisher"
+
+colSums(is.na(meso_input))
+```
+
+## Read the bibliographic files from the 3 data banks into a data frame
+
+```{r}
+lr_df <- rbind.fill(scopus_merged_df,wos_df,meso_input) 
+```
+
+## Text cleaning and normalization
+
+```{r}
+lr_df <- norm_df(lr_df)
+# This function `norm_df` wraps all (1) text normalization and (2) helper field extraction that are needed.
+# By default, expect the function to add 8 more columns compared with the original data frame.
+# Alternatively, if you want to customize the normalization operations, refer to its sub-functions by `?norm_df` or hack the source code.
+```
+
+# Deduplicate by exact matching
+
+## Based on doi_norm and title
+
+```{r}
+# We remove the identified duplicates without manual review because this is fairly conservative.
+lr_exmatch <- dedu_exact(lr_df, match_by = c("doi_norm", "title"))
+# The most recent version will be retained at removal.
+```
+
+## Based on title_norm
+
+```{r}
+c(lr_exmatch, lr_exmatch_manual_check) %<-% dup_find_exact(lr_exmatch, match_by = "title_norm", double_check = TRUE, check_by = "first_author_last_name_norm")  # Syntax %<-% must be used in this case to have the function return 2 data frames.
+```
+
+## Manually review duplicates in lr_exmatch_manual_check
+
+Mark unique records found in lr_exmatch 
+
+```{r}
+lr_exmatch$match[which(lr_exmatch$match == 4675 & lr_exmatch$first_author_last_name_norm == "bongaerts")] <- max(lr_exmatch$match)+1
+
+lr_exmatch$match[which(lr_exmatch$match == 5158 & lr_exmatch$first_author_last_name_norm == "stubblefield")] <- max(lr_exmatch$match)+1
+```
+
+The most recent version will be retained at removal.
+
+```{r}
+lr_de_extmat <- lr_exmatch[!duplicated(lr_exmatch$match), ]
+
+# In order not to interfere downstream processes, we remove the "match" column
+lr_de_extmat <- select(lr_de_extmat, -match)
+```
+
+# Deduplicate by fuzzy matching
+
+## Part 1: Order + adjacent 
+
+Calculate string similarity between adjacent rows for columns "title_norm" and "abstract_norm".
+
+```{r}
+c(lr_de_extmat, lr_de_extmat_simi) %<-% simi_order_adj(lr_de_extmat, order_by = "title_norm")
+```
+
+Then we plot similarity distributions of normalized title and abstract to choose cutoffs.
+
+```{r}
+# Distribution of similarity scores based on normalized title
+p_lr_de_extmat_simi_ti <- plot_simi_dist(lr_de_extmat_simi, "title_simi")
+p_lr_de_extmat_simi_ti  # show plot in the Plots tab
+
+# Distribution of similarity scores based on normalized abstract
+p_lr_de_extmat_simi_ab <- plot_simi_dist(lr_de_extmat_simi, "abstract_simi")
+p_lr_de_extmat_simi_ab  # show plot in the Plots tab
+```
+
+Set cutoffs
+
+```{r}
+c(lr_de_extmat, id_dup_pair_adj) %<-% dup_find_fuzzy_adj(lr_de_extmat, lr_de_extmat_simi, cutoff_title = 0.9, cutoff_abstract = 0.3)
+```
+
+Set the decision tree for semi-automated deduplication
+
+```{r}
+c(lr_de_extmat, id_dup_pair_adj) %<-% decision_tree_adj(lr_de_extmat, id_dup_pair_adj)
+```
+
+Deduplication according to pre-set scenarios
+
+```{r}
+# For the "duplicate", we can just deduplicate by `dup_rm_adj()`. 
+lr_de_extmat_inter <- dup_rm_adj(lr_de_extmat, id_dup_pair_adj)
+
+lr_de_extmat_inter_dup <- subset(lr_de_extmat_inter,duplicated(match))
+
+# For the "check", we call revtools shiny app to review the duplicate pairs.
+# In the app, we select "Yes" for "Is there a variable describing duplicates in this dataset?" and "match" for "Select column containing duplicate data".
+# At this step, we finish removing duplicates or keeping record pairs in the app. We click "Not duplicates" if the pair is not duplicated. Or we click "Select Entry #1" or "Select Entry #2" to keep one of the two.
+# After reviewing all potential duplicates, don't forget to click "Save Data" and "Exit App" to return the results to the R workspace. In this case, the results will be returned to variable `b3`.
+# See revtools tutorial for more instructions: https://revtools.net/deduplication.html
+lr_fuz1 <- revtools::screen_duplicates(lr_de_extmat_inter)  
+
+
+# remove helper columns
+lr_fuz1 <- select(lr_fuz1, -c(id, match, matches))
+```
+
+Save data in revtools shiny app as "lr_fuz1_manual_check.csv"
+
+## Part 2: Partition + pairwise 
+
+Calculate pairwise string similarity for "title_norm" and "abstract_norm" between all records within the same partitioned group 
+Computing time estimation: > 30 min (depends on computer's specs and dataset size)
+
+```{r}
+c(lr_fuz2, lr_fuz2_simi) %<-% simi_ptn_pair(lr_fuz1, partition_by = "first_two_letters_first_author_last_name")
+```
+
+Flag potential duplicates
+
+```{r}
+id_dup_pair_pairwise <- dup_find_fuzzy_pairwise(lr_fuz2, lr_fuz2_simi, cutoff_title = 0.9, cutoff_abstract = 0.7)
+```
+
+**N.B.** The cutoff thresholds can be inherited from part 1. To avoid over-deleting unique records, we suggest tightening the cutoff of abstract similarity to 0.7 (or 0.6) in this step, as opposed to 0.3 in part 1, where the risk is mitigated by the more restricted ordering (in contrast to the exhaustive pairwise comparison).
+
+
+Set the decision tree for semi-automated deduplication
+
+```{r}
+id_dup_pair_pairwise <- decision_tree_pairwise(lr_fuz2, id_dup_pair_pairwise)
+```
+
+For the duplicate pairs with a “check” decision, we output them into a data frame for manual review.
+
+```{r}
+df_check_pairwise <- dup_screen_pairwise(lr_fuz2, id_dup_pair_pairwise)
+```
+
+Manual review
+
+```{r}
+# Only 3 duplicate pair in this dataset is "not duplicate".
+id_dup_pair_pairwise <- dup_resolve_pairwise(
+  id_dup_pair_pairwise,
+  df_check_pairwise,
+  match_index = c(3),
+  result = "not duplicate")
+```
+
+Remove duplicates
+
+```{r}
+lr_dedup <- dup_rm_pairwise(lr_fuz2, id_dup_pair_pairwise, to_dataframe = TRUE)
+
+# remove helper columns
+lr_dedup <- select(lr_dedup, -id, -partition)
+```
+
+# Clean dataset (remove non-standards columns that would not be recognized by Zotero when importing and added to the note field)
+
+```{r}
+colnames(lr_dedup)
+str(lr_dedup) 
+lr_dedup_reduced <- select(lr_dedup, label, type, author,year, title,
+                                        journal, volume,number,doi,url,
+                                        affiliations,abstract, 
+                                        keywords,correspondence_address,
+                                        publisher,issn,language, abbrev_source_title,
+                                        publication_stage, source,
+                                        pmid, pages, isbn, editor, pages, booktitle, series)
+str(lr_dedup_reduced) 
+```
+# Export deduplicated dataset to Excel workbook format and csv
+
+```{r}
+library("writexl")
+write_xlsx(lr_dedup,"LR_deduplicated.xlsx")
+
+write.csv(lr_dedup, "LR_deduplicated.csv", row.names=FALSE)
+```
+
+# Export clean deduplicated dataset to .ris, .bib, and .xlsx formats
+
+```{r}
+revtools::write_bibliography(lr_dedup_reduced, "C:/Users/claud/Documents/COMUNE/Obsidian Vault/ScienceObsidian/3Projects/Mesophotic_methods_LR/deduplication/LR_deduplicated_reduced.ris", format = "ris")  # export .ris
+# or export .bib
+revtools::write_bibliography(lr_dedup_reduced, "C:/Users/claud/Documents/COMUNE/Obsidian Vault/ScienceObsidian/3Projects/Mesophotic_methods_LR/deduplication/LR_deduplicated_reduced.bib", format = "bib")
+
+write_xlsx(lr_dedup_reduced,"LR_deduplicated_reduced.xlsx")
+```
+
+# Export duplicates for supplementary materials
+
+```{r}
+
+```
+
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
+# References
+
+```{r}
+#install.packages("report")
+library(report)
+report(sessionInfo())
+```
