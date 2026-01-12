@@ -11,9 +11,9 @@ Mesophotic ecosystems host high biodiversity and support a vast variety of habit
 
 ## Repository structure
 
-- [Deduplication](/deduplication): autoamtic deduplication with manual check was performed using the R package RefDeduR.
+- [Deduplication](/deduplication): automatic deduplication with manual check was performed using the R package RefDeduR.
   - [raw data]() consisting in bibliography files exported from SCOPUS, Web of Science and mesophotic.org
-  - [deduplication script](deduplication/Mesophotic_methods_LR_screening_from_excel)  
+  - [deduplication script](deduplication/Mesophotic_methods_LR_screening_from_excel.Rmd)  
   - [deduplicated data](/deduplication/Clean_data): list of deduplicated records that were subjected to title-abstract screening
     
 - [Data analysis of extracted data](/Extracted_data_analysis)
