@@ -17,10 +17,10 @@ Mesophotic ecosystems host high biodiversity and support a vast variety of habit
   - [deduplicated data](/deduplication/Clean_data): list of deduplicated records that were subjected to title-abstract screening
     
 - [Data analysis of extracted data](/Extracted_data_analysis)
-  - [Input data](/Extracted_data_analysis/Input_data): data extracted after full-text screening of included records (for explanation of each parameter collected see metadata) and MEOW, an Excel file with the Marine Ecoregion of the World described by [Spalding et al., 2007](https://doi.org/10.1641/B570707)
+  - [Input data](/Extracted_data_analysis/Input_data): data extracted after full-text screening of included records (for explanation of each parameter collected see [metadata](/metadata.xlsx) and MEOW, an Excel file with the Marine Ecoregion of the World described by [Spalding et al., 2007](https://doi.org/10.1641/B570707)
   - Analyses of input data were run at a [global](/Extracted_data_analysis/global) level as well as for studies carried out in [temperate](/Extracted_data_analysis/temperate) and in [tropical](/Extracted_data_analysis/tropical) latitudinal regions. In each dedicated subfolder, there is a script file written in R markdown, the corresponding report in html, a subfolder with transformed data and one for visualizations.
 
-- [Removed_records_clean.csv](/Removed_records_clean.csv): List of records excluded from the review with specified removal criteria. Each removal criterion is exaplained in supplementary materials 1. 
+- [Removed_records_clean.csv](/Removed_records_clean.csv): List of records excluded from the review with specified removal criteria. Each removal criterion is exaplained in see [metadata](/metadata.xlsx). 
 
 ## Licence
 Scripts author: Claudia Campanini. No data can be used without the permission of the authors. Enquiries to claudiacampanini@hotmail.it
