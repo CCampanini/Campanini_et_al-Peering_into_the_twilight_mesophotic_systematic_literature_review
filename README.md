@@ -1,8 +1,6 @@
-# Peering into the twilight: a systematic review on visual -based investigation of worldwide mesophotic ecosystems  
+# Peering into the twilight: a systematic review on visual -based investigation of worldwide mesophotic ecosystems  - UNDER REVIEW
 
 Data and scripts used for the manuscirpt *Campanini et al., submitted, Peering into the twilight: a systematic review on visual -based investigation of worldwide mesophotic ecosystems*
-
-Pre-print available at:
 
 Authors: Campanini, Claudia; Marrocco, teo; Roveta, Camilla; Pulido Mantas, Torcuato; Coppari, Martina; Gregorin, Chiara; Di Camillo, Cristina Gioia; Cerrano, Carlo
 
