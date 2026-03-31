@@ -1,13 +1,18 @@
 ---
-title: "SYSTEMATIC REVIEW ON INVESTIGATION METHODS OF MESOPHOTIC latitudinalRegionS WITH A FOCUS ON BENTHIC COMMUNITIES"
+title: "Peering into the twilight - a systematic review on visual-based investigation
+  of worldwide mesophotic ecosystems"
 author: "Claudia Campanini"
 date: '`r Sys.Date()`'
-output: 
-  html_document: 
-    toc: yes
-    number_sections: yes
-editor_options: 
-  markdown: 
+output:
+  word_document:
+    toc: true
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    number_sections: true
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -17,11 +22,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-# SYSTEMATIC REVIEW ON INVESTIGATION METHODS OF MESOPHOTIC latitudinalRegionS WITH A FOCUS ON BENTHIC COMMUNITIES
+# DATA PREPARATION
 
-## DATA PREPARATION
-
-### Load libraries
+## Load libraries
 
 ```{r, show = F}
 library(here)
@@ -33,13 +36,13 @@ library(stringr) #many data wrangling functions
 library(readxl)
 ```
 
-### Load data
+## Load data
 
 ```{r}
 raw <- read_excel(here("Extracted_data_analysis","Input_data","extracted_raw.xlsx"))
 ```
 
-### Cleaning
+## Cleaning
 
 Clean year columns 
 
@@ -352,10 +355,10 @@ for (col_name in colnames(count_columns)) {
   colnames(count_results[[col_name]]) <- c(col_name, "Count")
   
   count_results[[col_name]] %<>% 
-    filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x)
-                  )
-           ) %>% # delete rows with "notapp" 
+    filter(
+      if_all(.cols = everything(), ~ !grepl("notapp", .x))
+    ) %>%
+ # delete rows with "notapp" 
     tidyr::drop_na()
 
   count_results[[col_name]] %<>%
@@ -471,10 +474,9 @@ for (col_name in colnames(count_columns_method)) {
   colnames(count_results_method[[col_name]]) <- c(col_name, "Count")
   
   count_results_method[[col_name]] %<>% 
-    filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x)
-                  )
-           ) %>% # delete rows with "notapp" 
+    filter(
+      if_all(.cols = everything(), ~ !grepl("notapp", .x))
+    ) %>% # delete rows with "notapp" 
     tidyr::drop_na()
 
   count_results_method[[col_name]] %<>%
@@ -1110,8 +1112,6 @@ platform_max_depth_long %<>%
 platform_depth_lat_long <- cbind(platform_min_depth_long, platform_max_depth_long$max_depth)
 
 rm(platform_min_depth_long, platform_max_depth_long)
-
-platform_depth_lat_long
 ```
 
 
@@ -2247,7 +2247,7 @@ detected %<>%
   mutate(across(everything(), as.character)) %>%
   replace(is.na(.), "0") %>%
   select(-detected_meso_other_taxa) %>%
-  filter(across(everything(), ~ !grepl("notapp", .x)))
+  filter(if_all(everything(), ~ !grepl("notapp", .x)))
 
 detected <- detected %>%
   mutate(across(-File, ~ case_when(
@@ -2411,7 +2411,7 @@ group <- group %>%
   mutate(across(everything(), as.character)) %>%
   replace(is.na(.), "0") %>%
   select(-detected_meso_other_taxa,-targetTaxa) %>%
-  filter(across(everything(), ~ !grepl("notapp", .x))) %>%
+  filter(if_all(everything(), ~ !grepl("notapp", .x))) %>%
   mutate(across(-File, ~ case_when(
     .x %in% c("x", "x,", "xx") ~ "1",
     .x == "," ~ "0",
@@ -2561,7 +2561,7 @@ new_spec  %<>%
   mutate(across(everything(), as.character)) %>%
   replace(is.na(.), "0") %>%
   select(-detected_meso_other_taxa) %>%
-  filter(across(everything(), ~ !grepl("notapp", .x))) %>%
+  filter(if_all(everything(), ~ !grepl("notapp", .x))) %>%
   mutate(across(-File, ~ case_when(
     .x %in% c("x") ~ "1",
     TRUE ~ .x
@@ -2781,8 +2781,11 @@ rm(molecular, molecular_notaxa)
 ## Most common target species 
 
 ```{r}
-table(raw$targetTaxa)
+target_species <- raw %>%
+  count(targetTaxa, name = "Count") %>%
+  arrange(desc(Count))
 
+target_species
 
 colnames(raw)
 print(paste("Publications on Corallium rubrum :", nrow(subset(raw, grepl("rubrum", targetTaxa)))))

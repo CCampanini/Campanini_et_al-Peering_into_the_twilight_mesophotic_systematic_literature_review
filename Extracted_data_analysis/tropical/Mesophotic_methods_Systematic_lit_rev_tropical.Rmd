@@ -1,13 +1,16 @@
 ---
-title: "SYSTEMATIC REVIEW ON INVESTIGATION METHODS OF MESOPHOTIC ENVIRONMENT WITH A FOCUS ON BENTHIC COMMUNITIES - TROPICAL"
+title: "Peering into the twilight - a systematic review on visual-based investigation
+  of mesophotic ecosystems - TROPICAL"
 author: "Claudia Campanini"
-date: '`r Sys.Date()`'
-output: 
-  html_document: 
-    toc: yes
-    number_sections: yes
-editor_options: 
-  markdown: 
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: true
+  html_document:
+    toc: true
+    number_sections: true
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -315,10 +318,10 @@ for (col_name in colnames(count_columns)) {
   colnames(count_results[[col_name]]) <- c(col_name, "Count")
   
   count_results[[col_name]] %<>% 
-    filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x)
-                  )
-           ) %>% # delete rows with "notapp" 
+    filter(
+      if_all(.cols = everything(), ~ !grepl("notapp", .x))
+    ) %>%
+ # delete rows with "notapp" 
     tidyr::drop_na()
 
   count_results[[col_name]] %<>%
@@ -434,10 +437,10 @@ for (col_name in colnames(count_columns_method)) {
   colnames(count_results_method[[col_name]]) <- c(col_name, "Count")
   
   count_results_method[[col_name]] %<>% 
-    filter(across(.cols = everything(),
-                  ~ !grepl("notapp",.x)
-                  )
-           ) %>% # delete rows with "notapp" 
+    filter(
+      if_all(.cols = everything(), ~ !grepl("notapp", .x))
+    ) %>%
+ # delete rows with "notapp" 
     tidyr::drop_na()
 
   count_results_method[[col_name]] %<>%
@@ -1009,8 +1012,6 @@ platform_max_depth_long %<>%
 platform_depth_lat_long <- cbind(platform_min_depth_long, platform_max_depth_long$max_depth)
 
 rm(platform_min_depth_long, platform_max_depth_long)
-
-platform_depth_lat_long
 ```
 
 
@@ -1983,7 +1984,7 @@ detected %<>%
   mutate(across(everything(), as.character)) %>%
   replace(is.na(.), "0") %>%
   select(-detected_meso_other_taxa) %>%
-  filter(across(everything(), ~ !grepl("notapp", .x)))
+  filter(if_all(everything(), ~ !grepl("notapp", .x)))
 
 detected <- detected %>%
   mutate(across(-File, ~ case_when(
@@ -2138,7 +2139,7 @@ group <- group %>%
   mutate(across(everything(), as.character)) %>%
   replace(is.na(.), "0") %>%
   select(-detected_meso_other_taxa,-targetTaxa) %>%
-  filter(across(everything(), ~ !grepl("notapp", .x))) %>%
+  filter(if_all(everything(), ~ !grepl("notapp", .x))) %>%
   mutate(across(-File, ~ case_when(
     .x %in% c("x", "x,", "xx") ~ "1",
     .x == "," ~ "0",
@@ -2286,7 +2287,7 @@ new_spec  %<>%
   mutate(across(everything(), as.character)) %>%
   replace(is.na(.), "0") %>%
   select(-detected_meso_other_taxa) %>%
-  filter(across(everything(), ~ !grepl("notapp", .x))) %>%
+  filter(if_all(everything(), ~ !grepl("notapp", .x))) %>%
   mutate(across(-File, ~ case_when(
     .x %in% c("x") ~ "1",
     TRUE ~ .x
