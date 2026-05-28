@@ -6,11 +6,11 @@ date: '`r Sys.Date()`'
 output:
   word_document:
     toc: true
-  pdf_document:
-    toc: true
   html_document:
     toc: true
     number_sections: true
+  pdf_document:
+    toc: true
 editor_options:
   markdown:
     wrap: 72
@@ -61,7 +61,8 @@ library(purrr)
 library(tibble)
 
 # Get all column names
-cols <- names(raw[,-c(1:13)])
+cols <- colnames(raw)
+  names(raw[,-c(1:13)])
 
 # Create a summary list
 summary_list <- map(cols, function(col) {
@@ -88,6 +89,39 @@ summary_df
 rm(summary_list, cols)
 ```
 
+Create a summary table excluding purely taxonomic studies
+
+```{r}
+summary_methods_df <- raw %>% 
+  filter(taxonomic_publication == "taxa++" |  is.na(taxonomic_publication) )
+
+cols <- colnames(raw)
+  names(raw[,-c(1:13)])
+
+# Create a summary list
+summary_methods_list <- map(cols, function(col) {
+  data <- summary_methods_df[,-c(1:13)][[col]]
+  
+  tibble(
+    Column    = col,
+    unique    = paste(unique(data), collapse = ", "),
+    nd        = sum(data == "nd", na.rm = TRUE),
+    notapp    = sum(data == "notapp", na.rm = TRUE),
+    assigned  = sum(!is.na(data) & data != "nd" & data != "notapp"),
+    `NA`        = sum(is.na(data)),
+    total     = sum(data == "nd", na.rm = TRUE) +
+                sum(data == "notapp", na.rm = TRUE) +
+                sum(!is.na(data) & data != "nd" & data != "notapp")
+  )
+})
+
+# Combine into one dataframe
+summary_methods_df <- bind_rows(summary_methods_list)
+
+summary_methods_df
+
+rm(summary_methods_df, cols)
+```
 
 # GEOGRAPHICAL DISTRIBUTION
 
@@ -250,6 +284,14 @@ Export count per ecoregion to csv for the map in QGIS
 ```{r, eval= F}
 writexl::write_xlsx(ecoreg_tot,
            here("Extracted_data_analysis","global","Output-Transformed_data","eco_reg_tot.xlsx"))
+```
+
+Studies per ecoregion
+
+```{r}
+print(paste("Percentage ecoregions with no studies:", round(nrow(subset(ecoreg_tot, ecoreg_tot$Count == 0))/nrow(ecoreg_tot)*100,1),"%"))
+
+print(paste("Percentage ecoregions with a single study:", round(nrow(subset(ecoreg_tot, ecoreg_tot$Count == 1))/nrow(ecoreg_tot)*100,1),"%"))
 ```
 
 ## Realms
@@ -415,7 +457,7 @@ treemap_counts[[1]]
 
 Save all tree maps plots
 
-```{r export treemap_counts}
+```{r export treemap_counts, results= "hide"}
 lapply(names(treemap_counts), function(x){
   ggsave(filename=paste0(x,".tiff"), 
          plot=treemap_counts[[x]],
@@ -625,6 +667,46 @@ for(col_name in colnames(split_columns)) {
 rm(col_name)
 ```
 
+Relabel indicators
+
+```{r}
+split_tot[[6]] %<>%
+  filter(indicators != "taxo") %>%
+  mutate(indicators = case_when(indicators == "Abundance" ~ "Abundance (346)",
+                               indicators == "Cover" ~ "Cover (312)",
+                               indicators == "Diversity" ~ "Diversity  (458)",
+                               indicators == "Habitat" ~ "Habitat (181)",
+                               indicators == "Morphological" ~ "Morphology (244)",
+                               indicators == "Size" ~ "Size (218)",
+                               indicators == "Biomass" ~ "Biomass  (68)",
+                               indicators == "Density" ~ "Density (219)",
+                               indicators == "growth" ~ "Growth rate (42)",
+                               indicators == "Health" ~ "Health (90)",
+                               indicators == "Physiological" ~ "Physiological indicator (127)",
+                               indicators == "ALDFGs" ~ "ALDFGs (64)",
+                               indicators == "Litter" ~ "Litter (55)",
+                               indicators == "Behaviour" ~ "Behaviour (40)",
+                               indicators == "Trophic" ~ "Trophic (65)",
+                               indicators == "impact" ~ "Impact (16)",
+                               indicators == "surv" ~ "Survival (29)",
+                               indicators == "geneticSequences" ~ "Genetic sequence (160)",
+                               indicators == "rugosity" ~ "Rugosity (1)",
+                               indicators == "func" ~ "Functional indicators (20)",
+                               indicators == "sex" ~ "Sex (22)",
+                               indicators == "Mortality" ~ "Mortality (27)",
+                               indicators == "Recruitment" ~ "Recruitment (25)",
+                               indicators == "NIS" ~ "Non-indigenous species (24)",
+                               indicators == "complexity" ~ "Complexity (6)",
+                               indicators == "disease" ~ "Diseases (7)",
+                               indicators == "economicValue" ~ "Economic value (1)",
+                               indicators == "ecoser" ~ "Ecosystem services (3)",
+                               indicators == "complexity" ~ "Complexity (6)",
+                               indicators == "orientation" ~ "Orientation (1)",
+                               indicators == "fecundity" ~ "Fecundity (1)",
+                               TRUE ~ indicators
+  ))
+```
+
 Export summary tables
 
 ```{r export summary_split_counts_question_1_3.xlsx}
@@ -634,6 +716,7 @@ write.xlsx(split_tot,
            file = here("Extracted_data_analysis",                        "global",                        "Output-Transformed_data",
                     "summary_split_counts_question_1_3.xlsx"))
 ```
+
 
 Create bar charts for each collected parameter
 
@@ -665,10 +748,10 @@ for (col_name in colnames(split_columns)) {
 
 }
 
-barchart_counts[[1]]
+barchart_counts[[6]]
 ```
 
-```{r}
+```{r, results= "hide"}
 lapply(names(barchart_counts), function(x){
   ggsave(filename=paste0("bar_",x,".tiff"), 
          plot=barchart_counts[[x]],
@@ -687,7 +770,6 @@ lapply(names(barchart_counts), function(x){
          )
   })
 ```
-
 # COUNT METHODS (PURELY TAXONOMIC STUDIES EXCLUDED)
 
 Create data frame with subset
@@ -799,23 +881,22 @@ barchart_split_methods[[4]]
 Export bar charts in a dedicated folder
 
 ```{r export Barcharts_split_methods, results= "hide"}
-lapply(names(barchart_counts), function(x){
+lapply(names(barchart_split_methods), function(x){
   ggsave(filename=paste0("bar_",x,".tiff"), 
-         plot=barchart_counts[[x]],
+         plot=barchart_split_methods[[x]],
          units = "in", width=12, height=4, dpi=300, compression = 'lzw',
          path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization","Barcharts_split_methods"), create.dir = T
          )
   })
 
-lapply(names(barchart_counts), function(x){
+lapply(names(barchart_split_methods), function(x){
   ggsave(filename=paste0("bar_",x,".png"), 
-         plot=barchart_counts[[x]],
+         plot=barchart_split_methods[[x]],
          units = "in", width=12, height=4, dpi=300,
-         path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization","Barcharts_split"), create.dir = T
+         path = here("Extracted_data_analysis",                        "global",                        "Output-Visualization","Barcharts_split_methods"), create.dir = T
          )
   })
 ```
-
 # PUBLICATIONS PER DEPTH
 
 ## Publications per depth
@@ -857,7 +938,7 @@ ggplot(pubs_depth, aes(x = factor(depth_bin), y = count)) +
 
 Export pubs per depth bar plot
 
-```{r Export pubs per depth bar plot, echo = F} 
+```{r Export pubs per depth bar plot, echo = F, results='hide'} 
 ggsave("pubs_depth.png", 
        units = "in", width = 8, height = 6,
        path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
@@ -912,14 +993,14 @@ pub_depth_lat_bar <- ggplot(pub_depth_lat, aes(x = depth_bin, y = count, fill = 
   coord_flip() +
   scale_y_continuous(position = "right") +
   scale_fill_manual(values = c("#2a788e", "black", "#440154", "darkolivegreen3", "darkorange")) +
-  theme(legend.position = "none")
+  theme(legend.position = "bottom")
 
 pub_depth_lat_bar
 ```
 
 Export bar chart as pub_depth_env.png 
 
-```{r, echo = F}
+```{r, echo = F, results='hide'}
 ggsave("pub_depth_lat_bar.png", 
        plot = pub_depth_lat_bar,
        units = "in", width = 8, height = 6,
@@ -1204,7 +1285,7 @@ platform_depth_lat_plot
 
 Export bar plot of most common platform per depth interval by latitudinalRegion
 
-```{r Export bar plot of most common platform per depth interval by latitudinalRegion}
+```{r Export bar plot of most common platform per depth interval by latitudinalRegion, results= "hide"}
 
 ggsave("platform_depth_lat_plot.tiff", 
        plot = platform_depth_lat_plot,
@@ -1280,7 +1361,7 @@ technique_decade_barplot
 
 Export bar plot of technique by decade
 
-```{r Export bar plot of technique by decade}
+```{r Export bar plot of technique by decade, results= "hide"}
 ggsave("technique_decade_barplot.tiff", 
        plot = technique_decade_barplot,
        units = "in", width = 7, height = 6, dpi = 300, compression = 'lzw',
@@ -1332,7 +1413,7 @@ technique_decade__env_barplot <- ggplot(subset(dir_ind_by_decade_lat,
              switch = "y") +
   theme_classic()+
   scale_fill_manual(values= c("#2a788e","#440154","darkolivegreen3","darkorange"),
-                    labels = c("polar (28)", "temperate (523)", "temperate+tropical (15)", "tropical (425)")) +
+                    labels = c("polar (29)", "temperate (526)", "temperate+tropical (15)", "tropical (430)")) +
   theme(legend.position = "bottom",
         legend.text = element_text(size = 10),
         axis.text.y = element_text(size=8.7),
@@ -1398,7 +1479,7 @@ technique_decade_env_barplot <- ggplot(plot_data,
   theme_classic() +
   scale_fill_manual(
     values = c("#2a788e", "#440154", "darkolivegreen3", "darkorange"),
-    labels = c("polar (28)", "temperate (523)", "temperate+tropical (15)", "tropical (425)")
+    labels = c("polar (29)", "temperate (526)", "temperate+tropical (15)", "tropical (430)")
   ) +
   theme(
     legend.position = "bottom",
@@ -1416,15 +1497,15 @@ technique_decade_env_barplot
 
 Export bar plot of technique by decade
 
-```{r Export bar plot of technique by decade and latitudinalRegion}
+```{r Export bar plot of technique by decade and latitudinalRegion, results= "hide"}
 ggsave("technique_decade_env_barplot.tiff", 
        plot = technique_decade_env_barplot,
-       units = "in", width = 7, height = 6, dpi = 300, compression = 'lzw',
+       units = "in", width = 8, height = 6, dpi = 300, compression = 'lzw',
        path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 
 ggsave("technique_decade_env_barplot.png",
        plot = technique_decade_env_barplot,
-       units = "in", width = 7, height = 6,
+       units = "in", width = 8, height = 6,
        path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
 ```
 
@@ -1457,16 +1538,16 @@ Rename fields with long version names
 
 ```{r Rename fields with long version names}
 field_merged %<>%
-  rename(`Biodiversity and \n community structure (412)` = field_commdesc,
-         `Distribution and \n connectivity (324)` = field_dist,
+  rename(`Biodiversity and \n community structure (415)` = field_commdesc,
+         `Distribution and \n connectivity (323)` = field_dist,
          `Conservation and \n management (121)` = field_cons,
-         `Disturbances (254)` = field_impass,
+         `Disturbances (255)` = field_impass,
          `Mapping (180)` = field_map,
          `Physiology (162)` = field_physio,
-         `Taxonomy (148)` = field_taxo,
-         `Molecular ecology (159)` = field_Molecular_ecology,
+         `Taxonomy (149)` = field_taxo,
+         `Molecular ecology (160)` = field_Molecular_ecology,
          `Acoustics (127)` = field_Acoustics,
-         `Environmental drivers and \n spatio-temporal patterns (267)` = field_environmental_drivers
+         `Environmental drivers and \n spatio-temporal patterns (269)` = field_environmental_drivers
          )
 colSums(field_merged)
 ```
@@ -1504,22 +1585,22 @@ Rename indicators with long version names
 
 ```{r}
 ind_common_matrix %<>%
-  rename(`Abundance \n (344)` = Abundance,
-         `Cover \n (309)` = Cover,
-         `Diversity \n (455)` = Diversity,
-         `Habitat \n (180)` = Habitat,
-         `Morphology \n (242)` = Morphological,
+  rename(`Abundance \n (346)` = Abundance,
+         `Cover \n (312)` = Cover,
+         `Diversity \n (458)` = Diversity,
+         `Habitat \n (181)` = Habitat,
+         `Morphology \n (244)` = Morphological,
          `Size \n (218) ` = Size,
          `Biomass \n (68)` = Biomass,
          `Density \n (219)` = Density,
          `Growth \n rate (42)` = growth,
-         `Health \n (89)`= Health,
+         `Health \n (90)`= Health,
          `Physiological \n indicator \n (127)` = Physiological,
          `ALDFGs \n (64)` = ALDFGs,
          `Litter \n (55)` = Litter, 
-         `Behaviour \n (39)`= Behaviour,
-         `Trophic \n (63)` = Trophic,
-         `Genetic \n sequence \n (159)` = geneticSequences
+         `Behaviour \n (40)`= Behaviour,
+         `Trophic \n (65)` = Trophic,
+         `Genetic \n sequence \n (160)` = geneticSequences
          )
 
 colSums(ind_common_matrix)
@@ -1554,9 +1635,9 @@ field_ind_heat
 
 Export plot 
 
-```{r export field_ind_heat}
+```{r export field_ind_heat, results= "hide"}
 ggsave("field_ind_heat.png", 
-       units = "in", width = 12.5, height = 5.5,
+       units = "in", width = 13.5, height = 5.5,
        path = here ("Extracted_data_analysis", "global",                        "Output-Visualization"))
 ```
 
@@ -1754,7 +1835,7 @@ sampling_simplified_treemap
 
 Export sampling_simplified_treemap
 
-```{r Export sampling_simplified_treemap}
+```{r Export sampling_simplified_treemap, results= "hide"}
 ggsave("sampling_simplified_treemap.png", 
        plot = sampling_simplified_treemap, 
        units = "in", width = 7, height = 6,
@@ -1859,7 +1940,7 @@ data_type_treemap
 
 Export sampling_simplified_treemap
 
-```{r Export data_type_treemap}
+```{r Export data_type_treemap, results= "hide"}
 ggsave("data_type_treemap.png", 
        plot = data_type_treemap, 
        units = "in", width = 7, height = 6,
@@ -1932,7 +2013,7 @@ habit_donut
 
 Export habit_donut
 
-```{r Export habit_donut}
+```{r Export habit_donut, results= "hide"}
 ggsave("habit_donut.png", 
        plot = habit_donut, 
        units = "in", width = 7, height = 6,
@@ -2027,7 +2108,7 @@ substrate_donut
 ```
 Export the substrate donut plot
 
-```{r Export the substrate donut plot}
+```{r Export the substrate donut plot, results= "hide"}
 ggsave("substrate_donut.png", 
        plot = substrate_donut,
        units = "in", width = 7, height = 6,
@@ -2119,7 +2200,7 @@ benthic_position_donut
 
 Export the benthic_position donut plot
 
-```{r Export the benthic_position donut plot}
+```{r Export the benthic_position donut plot, results= "hide"}
 ggsave("benthic_position_donut.png", 
        plot = benthic_position_donut, 
        units = "in", width = 7, height = 6,
@@ -2200,7 +2281,7 @@ target_level_treemap <- ggplot(target_level_labels,
 target_level_treemap
 ```
 
-```{r}
+```{r, results= "hide"}
 ggsave("target_level_treemap.png",
        plot = target_level_treemap,
        units = "in", width = 9, height = 6,
@@ -2362,7 +2443,7 @@ detected_bar +
   
 ```
 
-```{r}
+```{r, results= "hide"}
 ggsave("detected_bar.png", 
        units = "in", width = 7, height = 6,
        path = here ("Extracted_data_analysis",                        "global",                        "Output-Visualization"))
@@ -2511,7 +2592,7 @@ group_bar
 ```
 Export bar plot 
 
-```{r export group_bar.png}
+```{r export group_bar.png, results= "hide"}
 ggsave("group_bar.png", 
        plot = group_bar,
        units = "in", width = 7, height = 6,
@@ -2657,7 +2738,7 @@ new_species_bar
 
 Export bar plot 
 
-```{r export new_species_bar.png}
+```{r export new_species_bar.png, results= "hide"}
 ggsave("new_species_bar.png", 
        plot = new_species_bar,
        units = "in", width = 7, height = 6,
@@ -2688,7 +2769,7 @@ raw$visuallySurveyedSurface <- as.factor(raw$visuallySurveyedSurface)
 summary(subset(raw, is.na(raw$taxonomic_publication))$visuallySurveyedSurface)
 ```
 
-## CCR and latitudinalRegion
+## Platform per latitudinalRegion
 
 ```{r}
 nrow(subset(platform_depth_lat,platform_depth_lat$ccr_direct == 1))
@@ -2743,7 +2824,7 @@ print(paste("# Publications that included temporal replicates:", nrow(subset(raw
 ## Health
 
 ```{r}
-health <- subset(raw, grepl("Health", indicators) | grepl("Disease", indicators))
+health <- subset(raw, grepl("Health", indicators) | grepl("disease", indicators))
 
 unique(health$targetTaxa)
 ```
@@ -2793,5 +2874,15 @@ print(paste("Publications on Corallium rubrum :", nrow(subset(raw, grepl("rubrum
 print(paste("Publications on Paramuricea clavata:", nrow(subset(raw, grepl("clavata", targetTaxa)))))
 
 print(paste("Publications on Montastraea cavernosa:", nrow(subset(raw, grepl("cavernosa", targetTaxa)))))
+```
+# SESSION INFORMATION AND REFERENCES
+
+```{r,echo = F}
+sessionInfo()
+```
+
+```{r}
+library(report)
+report::report(sessionInfo())
 ```
 
