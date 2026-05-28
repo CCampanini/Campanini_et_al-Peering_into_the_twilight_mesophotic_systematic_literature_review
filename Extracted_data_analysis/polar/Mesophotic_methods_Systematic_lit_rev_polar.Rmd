@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 
 ## Load libraries
 
-```{r, show = F}
+```{r, show = F, results= "hide"}
 library(here)
 library(dplyr)
 library(ggplot2)
@@ -377,7 +377,7 @@ treemap_counts[[1]]
 
 Save all tree maps plots
 
-```{r export treemap_counts}
+```{r export treemap_counts, results= "hide"}
 lapply(names(treemap_counts), function(x){
   ggsave(filename=paste0(x,".tiff"), 
          plot=treemap_counts[[x]],
@@ -632,7 +632,7 @@ for (col_name in colnames(split_columns)) {
 barchart_counts[[1]]
 ```
 
-```{r}
+```{r, include=FALSE}
 lapply(names(barchart_counts), function(x){
   ggsave(filename=paste0("bar_",x,".tiff"), 
          plot=barchart_counts[[x]],
@@ -1090,7 +1090,7 @@ platform_depth_plot
 
 Export bar plot of most common platform per depth interval
 
-```{r Export bar plot of most common platform per depth interval by latitudinalRegion}
+```{r Export bar plot of most common platform per depth interval by latitudinalRegion, results= "hide"}
 
 ggsave("platform_depth_plot.tiff", 
        plot = platform_depth_plot,
@@ -1163,7 +1163,7 @@ technique_decade_barplot
 
 Export bar plot of technique by decade
 
-```{r Export bar plot of technique by decade}
+```{r Export bar plot of technique by decade, results= "hide"}
 ggsave("technique_decade_barplot.tiff", 
        plot = technique_decade_barplot,
        units = "in", width = 7, height = 6, dpi = 300, compression = 'lzw',
@@ -1205,7 +1205,7 @@ Rename fields with long version names
 
 ```{r Rename fields with long version names}
 field_merged %<>%
-  rename(`Biodiversity and \n community structure (17)` = field_commdesc,
+  rename(`Biodiversity and \n community structure (18)` = field_commdesc,
          `Distribution and \n connectivity (4)` = field_dist,
          `Disturbances (5)` = field_impass,
          `Trophic ecology (4)` = field_troph,
@@ -1249,21 +1249,21 @@ Rename indicators with long version names
 
 ```{r}
 ind_matrix %<>%
-  rename(`Abundance \n (13)` = Abundance,
+  rename(`Abundance \n (14)` = Abundance,
          `Cover \n (8)` = Cover,
-         `Diversity \n (18)` = Diversity,
+         `Diversity \n (19)` = Diversity,
          `Habitat \n (9)` = Habitat,
          `Morphology \n (7)` = Morphological,
          `Size \n (4) ` = Size,
          `Recruitment \n (1) ` = Recruitment,
-         `Density \n (10)` = Density,
+         `Density \n (11)` = Density,
          `Physiological \n indicator \n (1)` = Physiological,
          `Litter \n (1)` = Litter,
          `Biomass \n (4)` = Biomass,
          `Genetic \n sequence \n (2)` = geneticSequences,
          `Functional indicators \n (1)` = func,
          `Growth \n (1)` = growth,
-         `Trophic \n (3)` = Trophic,
+         `Trophic \n (4)` = Trophic,
          `Behaviour \n (4)` = Behaviour
          )
 
@@ -1299,7 +1299,7 @@ field_ind_heat
 
 Export plot 
 
-```{r export field_ind_heat}
+```{r export field_ind_heat, results= "hide"}
 ggsave("field_ind_heat.png", 
        units = "in", width = 12.5, height = 5.5,
        path = here ("Extracted_data_analysis", "polar",                        "Output-Visualization"))
@@ -1499,7 +1499,7 @@ sampling_simplified_treemap
 
 Export sampling_simplified_treemap
 
-```{r Export sampling_simplified_treemap}
+```{r Export sampling_simplified_treemap, results= "hide"}
 ggsave("sampling_simplified_treemap.png", 
        plot = sampling_simplified_treemap, 
        units = "in", width = 7, height = 6,
@@ -1605,7 +1605,7 @@ data_type_treemap
 
 Export sampling_simplified_treemap
 
-```{r Export data_type_treemap}
+```{r Export data_type_treemap, results= "hide"}
 ggsave("data_type_treemap.png", 
        plot = data_type_treemap, 
        units = "in", width = 7, height = 6,
@@ -1678,7 +1678,7 @@ habit_donut
 
 Export habit_donut
 
-```{r Export habit_donut}
+```{r Export habit_donut, results= "hide"}
 ggsave("habit_donut.png", 
        plot = habit_donut, 
        units = "in", width = 7, height = 6,
@@ -1773,7 +1773,7 @@ substrate_donut
 ```
 Export the substrate donut plot
 
-```{r Export the substrate donut plot}
+```{r Export the substrate donut plot, results= "hide"}
 ggsave("substrate_donut.png", 
        plot = substrate_donut,
        units = "in", width = 7, height = 6,
@@ -1865,7 +1865,7 @@ benthic_position_donut
 
 Export the benthic_position donut plot
 
-```{r Export the benthic_position donut plot}
+```{r Export the benthic_position donut plot, results= "hide"}
 ggsave("benthic_position_donut.png", 
        plot = benthic_position_donut, 
        units = "in", width = 7, height = 6,
@@ -1932,7 +1932,7 @@ target_level_treemap <- ggplot(target_level_labels,
 target_level_treemap
 ```
 
-```{r}
+```{r, results= "hide"}
 ggsave("target_level_treemap.png",
        plot = target_level_treemap,
        units = "in", width = 9, height = 6,
@@ -2084,7 +2084,7 @@ detected_bar +
   
 ```
 
-```{r}
+```{r, results= "hide"}
 ggsave("detected_bar.png", 
        units = "in", width = 7, height = 6,
        path = here ("Extracted_data_analysis",                        "polar",                        "Output-Visualization"))
@@ -2231,7 +2231,7 @@ group_bar
 ```
 Export bar plot 
 
-```{r export group_bar.png}
+```{r export group_bar.png, results= "hide"}
 ggsave("group_bar.png", 
        plot = group_bar,
        units = "in", width = 7, height = 6,
@@ -2324,6 +2324,15 @@ print(paste("# Publications that adopted molecular techniques not for taxonomy: 
 
 rm(molecular, molecular_notaxa)
 ```
+# SESSION INFORMATION AND REFERENCES
 
+```{r,echo = F}
+sessionInfo()
+```
+
+```{r}
+library(report)
+report::report(sessionInfo())
+```
 
 
