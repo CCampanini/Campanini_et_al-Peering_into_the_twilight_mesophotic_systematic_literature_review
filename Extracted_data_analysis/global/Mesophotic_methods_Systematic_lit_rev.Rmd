@@ -141,19 +141,15 @@ meow <- read.csv(file=here("Extracted_data_analysis","Input_data","MEOW.csv"))
 ```{r}
 prov <- location
 
-prov_lvls <- 
-  unique(
-    unlist(
-      str_split(location$prov_code, "\\_")
-                               )
-                        )
+# extract all unique province levels
+prov_lvls <- unique(unlist(str_split(location$prov_code, "_")))
 
+# create columns with exact matching
+prov[, prov_lvls] <- t(sapply(location$prov_code, function(x) {
+  parts <- str_split(x, "_")[[1]]
+  as.integer(prov_lvls %in% parts)
+}))
 
-prov[,prov_lvls] <- sapply(prov_lvls, 
-                                      function(y){
-                                        str_count(location$prov_code, y)
-                                        }
-                                      )
 rm(prov_lvls)
 ```
 
